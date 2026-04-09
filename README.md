@@ -1,132 +1,92 @@
-# 漫旅 ManLv · 保研行程助手
+# 漫旅 ManLv 前端
 
-这是一个为保研学生设计的智能行程管理应用，帮助管理多所院校的夏令营和面试行程。
+漫旅（ManLv）是一个面向保研场景的行程与备考助手前端项目，聚焦夏令营/面试全流程管理、信息整理与 AI 交互体验。
+
+## 项目状态
+
+- 前端仓库：`manlv-frontend`
+- 运行方式：`create-react-app`（React 18）
+- 当前默认路由：未登录进入 `/`，登录后进入 `/home`
 
 ## 技术栈
 
-- **React 18** - 前端框架
-- **React Router 6** - 路由管理
-- **纯CSS** - 样式（中国风设计）
+- React 18
+- React Router DOM 6
+- React Scripts 5
+- @icon-park/react
+- @amap/amap-jsapi-loader
 
-## 功能特性
+## 核心能力
 
-### ✨ 核心功能
-- 📱 **登录注册** - 手机号注册、验证码、第三方登录
-- 🏠 **主页仪表板** - 行程概览、倒计时、情绪记录
-- 📅 **行程管理** - 多院校行程时间线管理
-- 🤖 **AI助手** - 智能对话、行程规划建议
-- 🎓 **备考支持** - 针对院校的面试要点和导师研究
+- 认证入口：登录/注册页面与登录态路由守卫
+- 行程管理：行程列表、详情页、时间线与城市信息
+- 学习备考：学习页、收件箱页、个人中心页
+- AI 交互：全局浮窗助手 + 聊天页面
+- 邮件能力：邮件解析与邮件回复生成服务模块
 
-### 🎨 设计特色
-- 中国风配色（墨色、纸色、金色）
-- 移动端优先设计（420px宽度）
-- 精致的交互动画
-- 思源宋体和思源黑体字体
+## 页面与路由
 
-## 快速开始
+- `/`：登录注册页 `AuthPage`
+- `/home`：主页 `HomePage`
+- `/trip`：行程页 `SchedulePage`
+- `/trip/:school`：行程详情页 `TripDetailPage`
+- `/learn`：学习页 `LearnPage`
+- `/inbox`：收件箱页 `InboxPage`
+- `/profile`：个人中心页 `ProfilePage`
+- `/chat`：AI 聊天页 `ChatPage`
+- `/schedule`：兼容旧路由，重定向到 `/trip`
 
-### 安装依赖
-\`\`\`bash
+## 目录结构
+
+```text
+ManLv/
+├─ public/
+├─ src/
+│  ├─ components/
+│  ├─ pages/
+│  ├─ services/
+│  ├─ App.js
+│  └─ index.js
+├─ package.json
+└─ README.md
+```
+
+## 本地开发
+
+1) 安装依赖
+
+```bash
 npm install
-\`\`\`
+```
 
-### 启动开发服务器
-\`\`\`bash
+2) 启动开发环境
+
+```bash
 npm start
-\`\`\`
+```
 
-应用将在 `http://localhost:3000` 启动
+默认访问 `http://localhost:3000`
 
-### 构建生产版本
-\`\`\`bash
+3) 打包构建
+
+```bash
 npm run build
-\`\`\`
+```
 
-## 项目结构
+4) 运行测试
 
-\`\`\`
-manlv-app/
-├── public/
-│   └── index.html          # HTML模板
-├── src/
-│   ├── pages/              # 页面组件
-│   │   ├── AuthPage.js     # 登录注册页
-│   │   ├── HomePage.js     # 主页
-│   │   ├── SchedulePage.js # 行程页
-│   │   ├── TripDetailPage.js # 行程详情页
-│   │   └── ChatPage.js     # AI聊天页
-│   ├── App.js              # 主应用组件
-│   ├── App.css             # 全局样式
-│   ├── index.js            # 入口文件
-│   └── index.css           # 基础样式
-└── package.json            # 项目配置
-\`\`\`
+```bash
+npm test
+```
 
-## 主要页面
+## NPM Scripts
 
-### 1. 登录注册页 (`/`)
-- 手机号/邮箱登录
-- 手机号注册（验证码）
-- 微信、QQ、微博第三方登录
-- 密码强度检测
+- `npm start`：启动开发服务器
+- `npm run build`：构建生产包
+- `npm test`：运行测试
+- `npm run eject`：弹出 CRA 配置（不可逆）
 
-### 2. 主页 (`/home`)
-- 行程倒计时卡片
-- 快捷操作按钮
-- 今日情绪记录
-- 行程列表
+## 相关仓库
 
-### 3. 行程页 (`/schedule`)
-- 周历视图
-- 每日行程详情
-- 行程冲突提示
-
-### 4. 行程详情页 (`/trip/:school`)
-- 时间线规划
-- 备考要点（AI生成）
-- 城市导览
-
-### 5. AI聊天页 (`/chat`)
-- 智能对话
-- 快捷问题建议
-- 行程冲突分析
-
-## 开发说明
-
-### 路由守卫
-- 未登录用户自动重定向到登录页
-- 登录后可访问所有功能页面
-
-### 状态管理
-- 使用 React Hooks (useState, useEffect)
-- 路由状态传递（useLocation）
-
-### 样式规范
-- CSS变量定义主题色
-- 最大宽度420px移动端布局
-- 响应式设计
-
-## 浏览器支持
-
-- Chrome (推荐)
-- Firefox
-- Safari
-- Edge
-
-## 后续开发计划
-
-- [ ] 集成真实AI API（Claude/ChatGPT）
-- [ ] 后端服务开发
-- [ ] 数据库集成
-- [ ] 用户认证系统
-- [ ] 邮件解析功能
-- [ ] 机票酒店预订
-- [ ] 个人中心完善
-
-## 许可证
-
-MIT
-
----
-
-**漫旅 ManLv** - 让保研之旅更从容 🚀
+- 前端：`https://github.com/caoyuxuan200205-sketch/manlv-frontend`
+- 后端：`https://github.com/caoyuxuan200205-sketch/manlv-backend`
