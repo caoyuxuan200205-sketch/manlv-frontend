@@ -1,0 +1,45 @@
+:root {
+  --ink: #1a1814;
+  --ink-light: #3d3830;
+  --ink-lighter: #6b6460;
+  --paper: #f5f0e8;
+  --paper-warm: #ede8dc;
+  --paper-card: #faf7f2;
+  --gold: #c8923a;
+  --gold-light: #e8b86d;
+  --gold-pale: #f5e6cc;
+  --red: #c0392b;
+  --red-soft: #e8d5d0;
+  --teal: #2a7a6a;
+  --teal-soft: #d0eae6;
+  --shadow: rgba(26,24,20,0.08);
+  --shadow-mid: rgba(26,24,20,0.15);
+  --shadow-deep: rgba(26,24,20,0.25);
+  --shadow-glow: rgba(200,146,58,0.15);
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* { 
+  margin: 0; 
+  padding: 0; 
+  box-sizing: border-box; 
+  -webkit-tap-highlight-color: transparent; 
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Noto Sans SC', sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100vh;
+}
