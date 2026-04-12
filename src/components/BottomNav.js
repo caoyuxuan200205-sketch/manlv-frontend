@@ -16,7 +16,7 @@ function BottomNav() {
   return (
     <>
       <div className="app-footer">
-        <span>© 2025 大轩保研研究院 All Rights Reserved</span>
+        <span>© 2026 大轩保研研究院 All Rights Reserved</span>
       </div>
       <div className="bottom-nav">
         {tabs.map(({ path, label, Icon }) => {

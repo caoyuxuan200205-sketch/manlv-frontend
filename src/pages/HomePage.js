@@ -97,7 +97,7 @@ function HomePage() {
           <span className="logo-zh">漫旅</span>
           <span className="logo-en">ManLv · Wandering Scholar</span>
         </div>
-        <div className="header-badge">保研季 2025</div>
+        <div className="header-badge">保研季 2026</div>
       </div>
 
       <div className="scroll-area">

@@ -707,7 +707,7 @@ function AuthPage({ onLogin }) {
 
         <div className="auth-footer">
           <div className="auth-footer-text">
-            © 2025 漫旅 ManLv · 让保研之旅更从容
+            © 2026 漫旅 ManLv · 让保研之旅更从容
           </div>
         </div>
       </div>

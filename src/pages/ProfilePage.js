@@ -213,7 +213,7 @@ function ProfilePage({ onLogout }) {
           <span className="page-title-icon"><ProfileIcon size={18} /></span>
           <div>
             <div className="page-title">我的</div>
-            <div className="page-subtitle">{user?.name} · 建筑学 2025</div>
+            <div className="page-subtitle">{user?.name} · 建筑学 2026</div>
           </div>
         </div>
       </div>

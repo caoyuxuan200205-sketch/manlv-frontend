@@ -8,10 +8,10 @@ const emailSamples = [
   {
     id: 1,
     school: '清华大学',
-    subject: '【建筑学院】2025年夏令营入营通知',
+    subject: '【建筑学院】2026年夏令营入营通知',
     from: 'admission@tsinghua.edu.cn',
     time: '2天前',
-    content: '尊敬的同学：\n\n恭喜！经审核，你已被我院2025年夏令营录取。\n\n夏令营时间：2025年7月15-20日\n地点：清华大学建筑学院\n\n请于7月1日前填写报名表：https://form.tsinghua.edu.cn/camp2025',
+    content: '尊敬的同学：\n\n恭喜！经审核，你已被我院2026年夏令营录取。\n\n夏令营时间：2026年7月15-20日\n地点：清华大学建筑学院\n\n请于7月1日前填写报名表：https://form.tsinghua.edu.cn/camp2026',
     parsed: true,
     status: '已入营',
     statusType: 'confirmed'
@@ -22,7 +22,7 @@ const emailSamples = [
     subject: '【建筑与城规】预推免面试邀请函',
     from: 'arch@tongji.edu.cn',
     time: '3天前',
-    content: '各位考生：\n\n同济大学建筑与城市规划学院诚邀你参加预推免面试。\n\n面试时间：2025年6月15日\n面试地点：同济大学四平路校区\n\n请点击链接确认参加：https://interview.tongji.edu.cn/register',
+    content: '各位考生：\n\n同济大学建筑与城市规划学院诚邀你参加预推免面试。\n\n面试时间：2026年6月15日\n面试地点：同济大学四平路校区\n\n请点击链接确认参加：https://interview.tongji.edu.cn/register',
     parsed: true,
     status: '待确认',
     statusType: 'pending'
@@ -30,10 +30,10 @@ const emailSamples = [
   {
     id: 3,
     school: '东南大学',
-    subject: '2025年研究生夏令营招生通知',
+    subject: '2026年研究生夏令营招生通知',
     from: 'rgs@seu.edu.cn',
     time: '5天前',
-    content: '各位学生：\n\n东南大学建筑学院将举办2025年研究生学术营。\n\n时间：2025年7月22-25日\n报名截止：2025年6月20日\n\n报名链接：https://zs.seu.edu.cn/2025camp',
+    content: '各位学生：\n\n东南大学建筑学院将举办2026年研究生学术营。\n\n时间：2026年7月22-25日\n报名截止：2026年6月20日\n\n报名链接：https://zs.seu.edu.cn/2026camp',
     parsed: true,
     status: '已申请',
     statusType: 'confirmed'
@@ -41,7 +41,7 @@ const emailSamples = [
   {
     id: 4,
     school: '哈尔滨工业大学',
-    subject: '关于举办2025年暑期学术营通知',
+    subject: '关于举办2026年暑期学术营通知',
     from: 'grad@hit.edu.cn',
     time: '1周前',
     content: '各位申请人：\n\n哈工大土木工程学院邀请你参加暑期学术营。活动以学术交流和科研体验为主。\n\n学术营时间：待定\n地点：哈尔滨工业大学（深圳）\n\n请尽快回复确认你的参加意向。',
@@ -475,3 +475,4 @@ function InboxPage() {
 }
 
 export default InboxPage;
+
