@@ -4,10 +4,13 @@ import { BackIcon, SendIcon } from '../components/Icons';
 import { RobotOne } from '@icon-park/react';
 import { useNavigate } from 'react-router-dom';
 import MockInterviewService from '../services/MockInterviewService';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 function ChatPage() {
   const location = useLocation();
   const navigate = useNavigate();
+  const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3001';
   
   // 从导航状态获取面试模式信息
   const isInterviewMode = location.state?.interviewMode || false;
@@ -55,6 +58,9 @@ function ChatPage() {
   const scrollToBottom = () => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); };
   const getTime = () => new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
   const userAvatarText = (userName || '我').trim().slice(0, 1);
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+ 
 
   const handleSend = async (text = inputValue) => {
     if (!text.trim()) return;
@@ -64,7 +70,6 @@ function ChatPage() {
     setIsTyping(true);
 
     if (isInterviewMode && sessionId) {
-      // 面试模式：调用 MockInterviewService
       try {
         const result = await MockInterviewService.submitAnswer(sessionId, text);
         setMessages(prev => [...prev, {
@@ -84,17 +89,110 @@ function ChatPage() {
         }]);
       }
     } else {
-      // 通用 AI 模式：返回通用回复
-      setTimeout(() => {
-        setMessages(prev => [...prev, {
-          role: 'ai',
-          content: `收到你的问题！作为漫旅AI助手，我来帮你分析。\n\n关于「${text}」这个问题，我建议...\n\n（实际AI功能需要配置API密钥）`,
-          time: getTime()
-        }]);
-        setIsTyping(false);
-      }, 1500);
+  try {
+    const token = localStorage.getItem('manlv_token');
+    if (!token) {
+      setMessages(prev => [...prev, {
+        role: 'ai',
+        content: '当前登录状态已失效，请重新登录后再试。',
+        time: getTime()
+      }]);
+      setIsTyping(false);
       return;
     }
+
+    // 创建消息占位，后续逐步填充
+    const msgId = `ai_${Date.now()}`;
+    setMessages(prev => [...prev, {
+      id: msgId,
+      role: 'ai',
+      content: '',
+      thinking: '',
+      usedTools: [],
+      time: getTime()
+    }]);
+
+    const response = await fetch(`${apiBaseUrl}/api/ai/chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ message: text })
+    });
+
+    if (!response.ok) throw new Error('AI 服务暂时不可用');
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value, { stream: true });
+      const lines = chunk.split('\n');
+
+      for (const line of lines) {
+        if (!line.startsWith('data:')) continue;
+        const raw = line.replace('data:', '').trim();
+        try {
+          const parsed = JSON.parse(raw);
+
+          if (parsed.type === 'thinking') {
+            // 显示工具调用思考过程
+            const toolLabel = {
+              get_user_profile: '读取用户资料',
+              list_interviews: '查询面试安排',
+              create_interview: '创建面试记录',
+              analyze_schedule_conflicts: '分析行程冲突'
+            }[parsed.tool] || parsed.tool;
+
+            setMessages(prev => prev.map(msg =>
+              msg.id === msgId
+                ? { ...msg, thinking: `🔍 正在${toolLabel}...` }
+                : msg
+            ));
+          }
+
+          if (parsed.type === 'text') {
+            // 逐字追加内容
+            setMessages(prev => prev.map(msg =>
+              msg.id === msgId
+                ? { ...msg, content: msg.content + parsed.content, thinking: '' }
+                : msg
+            ));
+          }
+
+          if (parsed.type === 'done') {
+            setMessages(prev => prev.map(msg =>
+              msg.id === msgId
+                ? { ...msg, usedTools: parsed.usedTools || [], thinking: '' }
+                : msg
+            ));
+          }
+
+          if (parsed.type === 'error') {
+            setMessages(prev => prev.map(msg =>
+              msg.id === msgId
+                ? { ...msg, content: `出错了：${parsed.message}`, thinking: '' }
+                : msg
+            ));
+          }
+        } catch (e) {
+          // 忽略解析失败
+        }
+      }
+    }
+  } catch (error) {
+    console.error('[通用AI对话失败]', error);
+    setMessages(prev => [...prev, {
+      role: 'ai',
+      content: `AI 服务调用失败：${error.message || '未知错误'}`,
+      time: getTime()
+    }]);
+  }
+}
 
     setIsTyping(false);
   };
@@ -202,18 +300,27 @@ ${result.feedback || '总体表现不错，继续加油！'}
               </div>
             )}
             <div className="msg-content">
+               {msg.thinking && (
+                 <div className="msg-thinking">
+                   {msg.thinking}
+                 </div>
+                )}
               <div className="msg-bubble">
-                {msg.content.split('\n').map((line, i) => (
-                  <React.Fragment key={i}>
-                    {line}
-                    {i < msg.content.split('\n').length - 1 && <br />}
-                  </React.Fragment>
-                ))}
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
               </div>
               {msg.suggestions && (
                 <div className="suggest-chips">
                   {msg.suggestions.map((s, i) => (
                     <button key={i} className="suggest-chip" onClick={() => handleSend(s)}>{s}</button>
+                  ))}
+                </div>
+              )}
+              {msg.usedTools && msg.usedTools.length > 0 && (
+                <div className="suggest-chips">
+                  {msg.usedTools.map((tool, i) => (
+                    <span key={`${tool.name}-${i}`} className="suggest-chip">
+                      {tool.ok ? '已调用' : '失败'} · {tool.name}
+                    </span>
                   ))}
                 </div>
               )}
