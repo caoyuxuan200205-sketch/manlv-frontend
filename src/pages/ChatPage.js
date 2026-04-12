@@ -35,8 +35,31 @@ function ChatPage() {
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef(null);
+  const inputAreaRef = useRef(null);
+  const [inputAreaHeight, setInputAreaHeight] = useState(120);
 
   useEffect(() => { scrollToBottom(); }, [messages]);
+  useEffect(() => {
+    const updateInputAreaHeight = () => {
+      const height = inputAreaRef.current?.offsetHeight || 0;
+      setInputAreaHeight(height + 5);
+    };
+
+    updateInputAreaHeight();
+    window.addEventListener('resize', updateInputAreaHeight);
+
+    let observer;
+    if (window.ResizeObserver && inputAreaRef.current) {
+      observer = new ResizeObserver(updateInputAreaHeight);
+      observer.observe(inputAreaRef.current);
+    }
+
+    return () => {
+      window.removeEventListener('resize', updateInputAreaHeight);
+      if (observer) observer.disconnect();
+    };
+  }, [isInterviewMode]);
+
   useEffect(() => {
     const fetchUser = async () => {
       const token = localStorage.getItem('manlv_token');
@@ -291,7 +314,7 @@ ${result.feedback || '总体表现不错，继续加油！'}
         )}
       </div>
 
-      <div className="chat-messages">
+      <div className="chat-messages" style={{ paddingBottom: `${inputAreaHeight}px` }}>
         {messages.map((msg, index) => (
           <div key={index} className={`msg ${msg.role}`}>
             {msg.role === 'ai' && (
@@ -346,7 +369,7 @@ ${result.feedback || '总体表现不错，继续加油！'}
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="chat-input-area">
+      <div className="chat-input-area" ref={inputAreaRef}>
         <div className="chat-input-row">
           <textarea
             className="chat-input"

@@ -5388,7 +5388,7 @@
 }
 
 .msg-bubble {
-  max-width: 78%;
+  max-width: 100%;
   padding: 10px 14px;
   border-radius: 14px;
   font-size: 13px;
@@ -5398,6 +5398,8 @@
 .msg-content {
   display: flex;
   flex-direction: column;
+  width: fit-content;
+  max-width: 78%;
 }
 
 .msg.user .msg-content {
