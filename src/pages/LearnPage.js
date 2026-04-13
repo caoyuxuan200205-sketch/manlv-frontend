@@ -6,6 +6,7 @@ import MockInterviewService from '../services/MockInterviewService';
 import AMapLoader from '@amap/amap-jsapi-loader';
 import SpotRecommendationService from '../services/SpotRecommendationService';
 
+
 // 安全密钥和 Key 配置
 const AMAP_KEY = '837693865f10c7e203276ffd079230d7'; // 替换为你的真实 Key
 const AMAP_SECURITY_CODE = '1b649ed11bc0ce194956c6f08a2fd2f4'; // 替换为你的真实安全密钥
@@ -54,6 +55,8 @@ function LearnPage() {
   const [user, setUser] = useState(null);
   const [recommendations, setRecommendations] = useState([]);
   const [isGeneratingSpots, setIsGeneratingSpots] = useState(false);
+  const [isParsingDoc, setIsParsingDoc] = useState(false);
+
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
   const navigate = useNavigate();
@@ -220,18 +223,78 @@ function LearnPage() {
       });
   };
 
-  const handleResumeFileChange = (e) => {
+  const handleResumeFileChange = async (e) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setResumeFile(file);
-      showToast(`已选择简历: ${file.name}`);
-      // 如果是PDF或文本文件，可以读取内容
-      if (file.type === 'text/plain' || file.name.endsWith('.txt')) {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          setResumeText(event.target?.result || '');
-        };
-        reader.readAsText(file);
+    if (!file) return;
+
+    // 检查文件格式
+    const isTextFile = file.type === 'text/plain' || 
+                       file.name.endsWith('.txt') || 
+                       file.name.endsWith('.md');
+    const isDocFile = file.name.endsWith('.doc') || file.name.endsWith('.docx');
+    
+    if (!isTextFile && !isDocFile) {
+      showToast('请上传文本文件(.txt/.md)或 Word 文档(.doc/.docx)');
+      return;
+    }
+
+    setResumeFile(file);
+    showToast(`已选择文件: ${file.name}`);
+
+    // 文本文件直接读取
+    if (isTextFile) {
+      try {
+        const text = await file.text();
+        setResumeText(text);
+        showToast(`文件读取成功！共 ${text.length} 字符`);
+      } catch (error) {
+        console.error('[文件读取失败]', error);
+        showToast('文件读取失败: ' + (error.message || '请稍后重试'));
+      }
+      return;
+    }
+
+    // Word 文档上传到后端解析
+    if (isDocFile) {
+      const token = localStorage.getItem('manlv_token');
+      if (!token) {
+        showToast('请先登录');
+        return;
+      }
+
+      setIsParsingDoc(true);
+      showToast('正在解析 Word 文档，请稍候...');
+
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch('http://localhost:3001/api/parse-resume', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: formData
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || '文档解析失败');
+        }
+
+        const result = await response.json();
+        
+        if (result.data?.text) {
+          setResumeText(result.data.text);
+          showToast(`文档解析成功！共 ${result.data.text.length} 字符`);
+        } else {
+          showToast('未能提取文档内容，请手动粘贴');
+        }
+      } catch (error) {
+        console.error('[Word 解析失败]', error);
+        showToast('Word 解析失败: ' + (error.message || '请稍后重试，或手动粘贴内容'));
+      } finally {
+        setIsParsingDoc(false);
       }
     }
   };
@@ -242,12 +305,26 @@ function LearnPage() {
       return;
     }
 
+    // 检查是否有简历文本内容
+    const finalResumeText = resumeText.trim();
+    if (!finalResumeText) {
+      showToast('简历内容为空，请重新上传或手动输入');
+      return;
+    }
+
     setSelectedInterview(interview);
     setIsLoading(true);
     try {
+      console.log('[启动面试]', {
+        school: interview.school,
+        major: interview.major,
+        resumeTextLength: finalResumeText.length,
+        hasResumeFile: !!resumeFile
+      });
+
       // 调用真实的豆包 AI API 初始化面试
       const result = await MockInterviewService.initializeInterview({
-        resumeText: resumeText,
+        resumeText: finalResumeText,
         resumeFile: resumeFile?.name,
         schoolName: interview.school,
         majorName: interview.major,
@@ -452,7 +529,7 @@ function LearnPage() {
                 <input
                   type="file"
                   id="resume-file-input"
-                  accept=".pdf,.txt,.doc,.docx"
+                  accept=".txt,.md,.doc,.docx"
                   onChange={handleResumeFileChange}
                   style={{ display: 'none' }}
                 />
@@ -461,7 +538,7 @@ function LearnPage() {
                   <div className="resume-upload-text">
                     {resumeFile ? resumeFile.name : '点击选择简历文件'}
                   </div>
-                  <div className="resume-upload-hint">支持 PDF, Word, 纯文本</div>
+                  <div className="resume-upload-hint">支持 TXT、MD、DOC、DOCX 格式</div>
                 </label>
               </div>
 
@@ -474,6 +551,21 @@ function LearnPage() {
                 onChange={(e) => setResumeText(e.target.value)}
                 rows={6}
               />
+
+              {/* Word 解析加载状态 */}
+              {isParsingDoc && (
+                <div className="pdf-parsing-status">
+                  <div className="pdf-parsing-spinner"></div>
+                  <span>正在解析 Word 文档...</span>
+                </div>
+              )}
+
+              {/* 简历内容已加载提示 */}
+              {resumeText && !isParsingDoc && (
+                <div className="pdf-parsing-status success">
+                  <span>✓ 简历内容已加载（{resumeText.length} 字符）</span>
+                </div>
+              )}
 
               {(resumeFile || resumeText) && (
                 <button className="resume-clear-btn" onClick={() => {

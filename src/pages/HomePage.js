@@ -180,7 +180,7 @@ function HomePage() {
           <div className="ai-card-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <div className="ai-card-avatar">
-                <BotIcon size={24} />
+                <img src="/ai-avatar-monkey.png" alt="AI智能助手" className="ai-card-avatar-img" />
               </div>
               <div>
                 <div className="ai-card-title">AI智能助手</div>

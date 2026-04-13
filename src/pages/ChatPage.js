@@ -336,7 +336,7 @@ ${(result.suggestions || ['补齐高频问题回答模板', '复盘本次薄弱�
             <BackIcon size={18} />
           </button>
           <div className={`ai-avatar ${isInterviewMode ? 'minimal' : ''}`}>
-            {isInterviewMode ? <span className="ai-avatar-text">AI</span> : <RobotOne theme="outline" size="18" fill="#333" />}
+            <img src="/ai-avatar-monkey.png" alt="漫旅 AI" className="ai-avatar-img" />
             <div className="ai-status-dot" />
           </div>
           <div className="ai-info">
@@ -368,7 +368,7 @@ ${(result.suggestions || ['补齐高频问题回答模板', '复盘本次薄弱�
               {msg.role === 'ai' && (
                 <div className="msg-ai-meta">
                   <div className="msg-avatar-mini">
-                    {isInterviewMode ? <span className="ai-avatar-text">AI</span> : <RobotOne theme="outline" size="12" fill="#333" />}
+                    <img src="/ai-avatar-monkey.png" alt="漫旅 AI" className="ai-avatar-mini-img" />
                   </div>
                   <span className="msg-ai-name">{isInterviewMode ? 'Interview AI' : 'ManLv AI'}</span>
                 </div>
