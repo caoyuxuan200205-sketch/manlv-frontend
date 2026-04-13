@@ -61,11 +61,11 @@ function HomePage() {
   ];
 
   const emotions = [
-    { emoji: '😰', label: '焦虑' },
-    { emoji: '😌', label: '平静' },
-    { emoji: '💪', label: '充实' },
-    { emoji: '😴', label: '疲惫' },
-    { emoji: '🌟', label: '期待' },
+    { imageSrc: '/emotion-anxious-monkey.png', fallbackEmoji: '😰', label: '焦虑' },
+    { imageSrc: '/emotion-nothing-monkey.png', fallbackEmoji: '😌', label: '平静' },
+    { imageSrc: '/emotion-fulling-monkey.png', fallbackEmoji: '💪', label: '充实' },
+    { imageSrc: '/emotion-tired-monkey.png', fallbackEmoji: '😴', label: '疲惫' },
+    { imageSrc: '/emotion-willing-monkey.png', fallbackEmoji: '🌟', label: '期待' },
   ];
 
   const showToast = (msg) => {
@@ -83,21 +83,30 @@ function HomePage() {
       '期待': '很好 · 带着期待出发！'
     };
     showToast(responses[emotion] || '已记录');
-    if (emotion === '焦虑' || emotion === '疲惫') {
-      setTimeout(() => {
-        navigate('/chat', { state: { prefill: `我现在感到${emotion}，帮我分析原因并给出减压建议` } });
-      }, 1200);
-    }
   };
 
   return (
     <div className="page">
-      <div className="app-header">
-        <div className="logo-mark">
-          <span className="logo-zh">漫旅</span>
-          <span className="logo-en">ManLv · Wandering Scholar</span>
+      <div className="app-header-modern">
+        <div className="header-left">
+          <div className="logo-mark-modern">
+            <img src="/ai-avatar-monkey.png" alt="漫旅" className="logo-icon" />
+            <div className="logo-text">
+              <span className="logo-zh-modern">漫旅</span>
+              <span className="logo-en-modern">ManLv</span>
+            </div>
+          </div>
         </div>
-        <div className="header-badge">保研季 2026</div>
+        <div className="header-right">
+          <div className="season-badge">保研季 2026</div>
+          <Link to="/profile" className="header-avatar">
+            <img 
+              src={user?.avatar || '/ai-avatar-monkey.png'} 
+              alt={user?.name || '用户'} 
+              className="header-avatar-img" 
+            />
+          </Link>
+        </div>
       </div>
 
       <div className="scroll-area">
@@ -155,96 +164,178 @@ function HomePage() {
         </div>
 
         {/* quick actions */}
-        <div className="section-title">快捷操作</div>
-        <div className="quick-grid">
-          <Link to="/trip" className="quick-btn">
-            <span className="quick-btn-icon"><CalendarIcon size={20} /></span>
-            <span className="label">行程表</span>
+        <div className="section-title-modern">
+          <span className="section-icon">⚡</span>
+          快捷操作
+        </div>
+        <div className="quick-grid-modern">
+          <Link to="/trip" className="quick-card glass">
+            <div className="quick-card-icon-wrapper">
+              <CalendarIcon size={22} />
+            </div>
+            <span className="quick-card-label">行程表</span>
+            <span className="quick-card-desc">查看全部行程</span>
           </Link>
-          <Link to="/chat" state={{ prefill: '行程冲突怎么处理？我7月20日清华和同济都有面试' }} className="quick-btn">
-            <span className="quick-btn-icon"><BotIcon size={20} /></span>
-            <span className="label">AI助手</span>
+          <Link to="/chat" state={{ prefill: '行程冲突怎么处理？我7月20日清华和同济都有面试' }} className="quick-card glass primary">
+            <div className="quick-card-icon-wrapper">
+              <BotIcon size={22} />
+            </div>
+            <span className="quick-card-label">AI助手</span>
+            <span className="quick-card-desc">智能问答</span>
           </Link>
-          <button className="quick-btn" onClick={() => showToast('机票模块即将上线')}>
-            <span className="quick-btn-icon"><PlaneIcon size={20} /></span>
-            <span className="label">订机票</span>
+          <button className="quick-card glass" onClick={() => showToast('机票模块即将上线')}>
+            <div className="quick-card-icon-wrapper">
+              <PlaneIcon size={22} />
+            </div>
+            <span className="quick-card-label">订机票</span>
+            <span className="quick-card-desc">即将上线</span>
           </button>
-          <button className="quick-btn" onClick={() => showToast('酒店推荐模块即将上线')}>
-            <span className="quick-btn-icon"><HotelIcon size={20} /></span>
-            <span className="label">订酒店</span>
+          <button className="quick-card glass" onClick={() => showToast('酒店推荐模块即将上线')}>
+            <div className="quick-card-icon-wrapper">
+              <HotelIcon size={22} />
+            </div>
+            <span className="quick-card-label">订酒店</span>
+            <span className="quick-card-desc">即将上线</span>
           </button>
         </div>
 
-        {/* AI Assistant Card */}
-        <div className="ai-card">
-          <div className="ai-card-header">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div className="ai-card-avatar">
-                <img src="/ai-avatar-monkey.png" alt="AI智能助手" className="ai-card-avatar-img" />
+        {/* AI Assistant Card - Modern */}
+        <div className="ai-card-modern">
+          <div className="ai-card-glow"></div>
+          <div className="ai-card-content-modern">
+            <div className="ai-card-header-modern">
+              <div className="ai-avatar-pulse">
+                <img src="/ai-avatar-monkey.png" alt="AI智能助手" className="ai-avatar-modern-img" />
+                <div className="ai-status-ring"></div>
               </div>
-              <div>
-                <div className="ai-card-title">AI智能助手</div>
-                <div className="ai-card-subtitle">有任何困惑？我来帮你分析</div>
+              <div className="ai-header-text">
+                <div className="ai-title-row">
+                  <span className="ai-title-modern">AI智能助手</span>
+                  <span className="ai-badge">在线</span>
+                </div>
+                <div className="ai-subtitle-modern">保研路上的智能伙伴 · 随时为你解答</div>
               </div>
             </div>
-          </div>
-          <div className="ai-card-content">
-            <div className="ai-questions">
-              <Link to="/chat" state={{ prefill: '保研面试有哪些常见问题？如何准备?' }} className="ai-quick-q">
-                📋 保研面试准备
+            <div className="ai-chips-modern">
+              <Link to="/chat" state={{ prefill: '保研面试有哪些常见问题？如何准备?' }} className="ai-chip">
+                <span className="ai-chip-icon">🎯</span>
+                <span className="ai-chip-text">面试准备</span>
               </Link>
-              <Link to="/chat" state={{ prefill: '我应该如何制定暑期行程计划?' }} className="ai-quick-q">
-                📅 行程规划建议
+              <Link to="/chat" state={{ prefill: '我应该如何制定暑期行程计划?' }} className="ai-chip">
+                <span className="ai-chip-icon">📅</span>
+                <span className="ai-chip-text">行程规划</span>
               </Link>
-              <Link to="/chat" state={{ prefill: '不同高校对保研生有什么差异？' }} className="ai-quick-q">
-                🏫 院校对比分析
+              <Link to="/chat" state={{ prefill: '不同高校对保研生有什么差异？' }} className="ai-chip">
+                <span className="ai-chip-icon">🏫</span>
+                <span className="ai-chip-text">院校分析</span>
               </Link>
-              <Link to="/chat" state={{ prefill: '我现在压力很大，怎样调整心态？' }} className="ai-quick-q">
-                💭 情绪疏导建议
+              <Link to="/chat" state={{ prefill: '我现在压力很大，怎样调整心态？' }} className="ai-chip">
+                <span className="ai-chip-icon">💆</span>
+                <span className="ai-chip-text">情绪疏导</span>
               </Link>
             </div>
+            <Link to="/chat" className="ai-cta-button">
+              <BotIcon size={18} />
+              <span>开始对话</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </Link>
           </div>
         </div>
 
-        {/* emotion check-in */}
-        <div className="section-title">今日状态</div>
-        <div className="emotion-widget">
-          <div className="emotion-title">今天感觉怎么样？</div>
-          <div className="emotion-options">
+        {/* emotion check-in - Modern */}
+        <div className="section-title-modern">
+          <span className="section-icon">💭</span>
+          今日状态
+        </div>
+        <div className="emotion-widget-modern">
+          <div className="emotion-header">
+            <span className="emotion-question">今天感觉怎么样？</span>
+            {selectedEmotion && (
+              <span className="emotion-selected-text">已选择：{selectedEmotion}</span>
+            )}
+          </div>
+          <div className="emotion-options-modern">
             {emotions.map((emotion) => (
               <button
                 key={emotion.label}
-                className={`emotion-opt ${selectedEmotion === emotion.label ? 'selected' : ''}`}
+                className={`emotion-card ${selectedEmotion === emotion.label ? 'selected' : ''}`}
                 onClick={() => selectEmotion(emotion.label)}
               >
-                <span className="emotion-emoji">{emotion.emoji}</span>
-                <span className="emotion-label">{emotion.label}</span>
+                <div className="emotion-visual">
+                  {emotion.imageSrc ? (
+                    <img
+                      src={emotion.imageSrc}
+                      alt={emotion.label}
+                      className="emotion-image"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        const fallback = e.currentTarget.nextElementSibling;
+                        if (fallback) fallback.style.display = 'flex';
+                      }}
+                    />
+                  ) : null}
+                  <span 
+                    className="emotion-fallback"
+                    style={{ display: emotion.imageSrc ? 'none' : 'flex' }}
+                  >
+                    {emotion.imageSrc ? emotion.fallbackEmoji : emotion.emoji}
+                  </span>
+                </div>
+                <span className="emotion-name">{emotion.label}</span>
+                {selectedEmotion === emotion.label && (
+                  <div className="emotion-indicator">
+                    <div className="indicator-dot"></div>
+                  </div>
+                )}
               </button>
             ))}
           </div>
         </div>
 
-        {/* trip list */}
-        <div className="section-title">我的行程</div>
-        <div className="trip-list">
+        {/* trip list - Modern */}
+        <div className="section-title-modern">
+          <span className="section-icon">🎯</span>
+          我的行程
+        </div>
+        <div className="trip-list-modern">
           {trips.map((trip) => (
-            <Link key={trip.id} to={`/trip/${trip.school}`} className={`trip-card ${trip.status}`}>
-              <div className="trip-header">
-                <div className="trip-school">{trip.school}</div>
-                <div className={`trip-type-badge badge-${trip.type}`}>
-                  {trip.type === 'camp' ? '夏令营' : trip.type === 'interview' ? '预推免面试' : '待确认'}
+            <Link key={trip.id} to={`/trip/${trip.school}`} className={`trip-card-modern ${trip.status}`}>
+              <div className="trip-status-indicator">
+                <div className={`status-dot status-${trip.status}`}></div>
+                {trip.conflict && <div className="status-conflict">!</div>}
+              </div>
+              <div className="trip-content">
+                <div className="trip-main">
+                  <div className="trip-school-modern">{trip.school}</div>
+                  <div className={`trip-badge-modern badge-${trip.type}`}>
+                    {trip.type === 'camp' ? '夏令营' : trip.type === 'interview' ? '面试' : '待确认'}
+                  </div>
+                </div>
+                <div className="trip-details">
+                  <span className="trip-detail">
+                    <LocationIcon size={12} />
+                    {trip.city}
+                  </span>
+                  <span className="trip-detail">
+                    <CalendarIcon size={12} />
+                    {trip.date}
+                  </span>
+                  {trip.daysLeft && (
+                    <span className={`trip-countdown ${trip.daysLeft <= 3 ? 'urgent' : ''}`}>
+                      {trip.daysLeft}天后
+                    </span>
+                  )}
+                </div>
+                <div className="trip-progress-modern">
+                  <div className="progress-track">
+                    <div className="progress-fill" style={{ width: `${trip.progress}%` }} />
+                  </div>
+                  <span className="progress-text">{trip.progress}%</span>
                 </div>
               </div>
-              <div className="trip-meta">
-                <span><LocationIcon size={11} /> {trip.city}</span>
-                <span><CalendarIcon size={11} /> {trip.date}</span>
-                {trip.daysLeft && <span><ClockIcon size={11} /> {trip.daysLeft}天后</span>}
-                {trip.conflict && <span className="trip-conflict"><WarningIcon size={11} /> 冲突</span>}
+              <div className="trip-arrow">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
               </div>
-              <div className="trip-progress">
-                <div className="trip-progress-bar" style={{ width: `${trip.progress}%` }} />
-              </div>
-              <div className="trip-progress-label">备考进度 {trip.progress}%</div>
             </Link>
           ))}
         </div>

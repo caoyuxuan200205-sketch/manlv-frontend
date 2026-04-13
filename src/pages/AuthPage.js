@@ -14,7 +14,9 @@ function AuthPage({ onLogin }) {
   const [registerPhone, setRegisterPhone] = useState('');
   const [forgotPhone, setForgotPhone] = useState('');
 
-  // 注册表单密码实时状态
+  // 注册表单实时状态
+  const [registerCode, setRegisterCode] = useState('');
+  const [registerName, setRegisterName] = useState('');
   const [registerPassword, setRegisterPassword] = useState('');
   const [registerConfirm, setRegisterConfirm] = useState('');
 
@@ -231,10 +233,7 @@ function AuthPage({ onLogin }) {
         <div className="auth-header">
           <div className="auth-logo">
             <div className="auth-logo-icon">
-              <div className="auth-logo-symbol">
-                <div className="auth-logo-envelope"></div>
-                <div className="auth-logo-plane"></div>
-              </div>
+              <img src="/ai-avatar-monkey.png" alt="漫旅" className="auth-logo-img" />
             </div>
             <div className="auth-logo-zh">漫旅</div>
             <div className="auth-logo-en">ManLv · Wandering Scholar</div>
@@ -372,12 +371,12 @@ function AuthPage({ onLogin }) {
                   />
                 </div>
                 {registerPhone && (
-                  <div className={`confirm-hint ${
-                    isValidPhone(registerPhone) ? 'confirm-ok' : 'confirm-no'
+                  <div className={`input-hint ${
+                    isValidPhone(registerPhone) ? 'hint-success' : 'hint-error'
                   }`}>
                     {isValidPhone(registerPhone)
-                      ? '✓ 手机号格式正确'
-                      : `✗ 请输入正确的11位手机号（已输入 ${registerPhone.length} 位）`}
+                      ? '手机号格式正确'
+                      : registerPhone.length < 11 ? '手机号位数不足' : '请输入正确的手机号'}
                   </div>
                 )}
               </div>
@@ -389,12 +388,14 @@ function AuthPage({ onLogin }) {
                     <span className="input-icon" style={{ left: '16px' }}><HashIcon size={16} /></span>
                     <input 
                       type="text" 
-                      className="auth-input" 
+                      className={`auth-input ${registerCode.length === 6 ? 'input-valid' : ''}`}
                       name="code"
                       placeholder="请输入验证码" 
                       style={{ paddingLeft: '48px' }}
                       maxLength="6" 
                       required 
+                      value={registerCode}
+                      onChange={e => setRegisterCode(e.target.value)}
                     />
                   </div>
                   <button 
@@ -406,6 +407,11 @@ function AuthPage({ onLogin }) {
                     {countdown > 0 ? `${countdown}s` : '获取验证码'}
                   </button>
                 </div>
+                {registerCode && registerCode.length !== 6 && (
+                  <div className="input-hint hint-error">
+                    请输入6位验证码
+                  </div>
+                )}
               </div>
 
               <div className="input-group">
@@ -414,14 +420,23 @@ function AuthPage({ onLogin }) {
                   <span className="input-icon" style={{ left: '16px' }}><ProfileIcon size={16} /></span>
                   <input 
                     type="text" 
-                    className="auth-input" 
+                    className={`auth-input ${registerName.length >= 2 ? 'input-valid' : ''}`}
                     name="name"
                     placeholder="请输入真实姓名" 
                     style={{ paddingLeft: '48px' }}
                     required 
+                    value={registerName}
+                    onChange={e => setRegisterName(e.target.value)}
                   />
                 </div>
-                <div className="input-hint">用于面试时身份核验</div>
+                {registerName && registerName.length < 2 && (
+                  <div className="input-hint hint-error">
+                    姓名至少需要2个字符
+                  </div>
+                )}
+                {!registerName && (
+                  <div className="input-hint">用于面试时身份核验</div>
+                )}
               </div>
 
               <div className="input-group">
@@ -430,7 +445,10 @@ function AuthPage({ onLogin }) {
                   <span className="input-icon" style={{ left: '16px' }}><LockIcon size={16} /></span>
                   <input 
                     type={showPassword['register-password'] ? 'text' : 'password'} 
-                    className="auth-input" 
+                    className={`auth-input ${registerPassword && (() => {
+                      const { score } = getPasswordStrength(registerPassword);
+                      return score >= 3 ? 'input-valid' : '';
+                    })() || ''}`}
                     name="password"
                     placeholder="6-20位，需包含字母和数字" 
                     required 
@@ -452,28 +470,27 @@ function AuthPage({ onLogin }) {
                   const { score, label, color } = getPasswordStrength(registerPassword);
                   const rules = getPasswordRules(registerPassword);
                   return (
-                    <div className="password-feedback">
-                      <div className="strength-bars-row">
-                        {[1,2,3,4,5].map(i => (
-                          <div
-                            key={i}
-                            className="strength-bar-seg"
+                    <div className="password-feedback-modern">
+                      <div className="strength-header">
+                        <div className="strength-bar-modern">
+                          <div 
+                            className="strength-fill"
                             style={{
-                              background: i <= score ? color : 'rgba(0,0,0,0.08)',
-                              transition: 'background 0.3s'
+                              width: `${(score / 5) * 100}%`,
+                              background: color
                             }}
                           />
-                        ))}
-                        <span className="strength-label" style={{ color }}>{label}</span>
+                        </div>
+                        <span className="strength-text" style={{ color }}>{label}</span>
                       </div>
-                      <ul className="password-rules">
+                      <div className="password-checklist">
                         {rules.map((r, i) => (
-                          <li key={i} className={r.pass ? 'rule-pass' : 'rule-fail'}>
-                            <span className="rule-icon">{r.pass ? '✓' : '○'}</span>
-                            {r.text}
-                          </li>
+                          <div key={i} className={`check-item ${r.pass ? 'checked' : ''}`}>
+                            <span className="check-dot" />
+                            <span className="check-text">{r.text}</span>
+                          </div>
                         ))}
-                      </ul>
+                      </div>
                     </div>
                   );
                 })()}
@@ -506,10 +523,10 @@ function AuthPage({ onLogin }) {
                   </button>
                 </div>
                 {registerConfirm && (
-                  <div className={`confirm-hint ${registerConfirm === registerPassword ? 'confirm-ok' : 'confirm-no'}`}>
+                  <div className={`input-hint ${registerConfirm === registerPassword ? 'hint-success' : 'hint-error'}`}>
                     {registerConfirm === registerPassword
-                      ? '✓ 两次密码一致'
-                      : '✗ 两次密码不一致'}
+                      ? '两次密码一致'
+                      : '两次密码不一致'}
                   </div>
                 )}
               </div>
@@ -564,12 +581,12 @@ function AuthPage({ onLogin }) {
                   />
                 </div>
                 {forgotPhone && (
-                  <div className={`confirm-hint ${
-                    isValidPhone(forgotPhone) ? 'confirm-ok' : 'confirm-no'
+                  <div className={`input-hint ${
+                    isValidPhone(forgotPhone) ? 'hint-success' : 'hint-error'
                   }`}>
                     {isValidPhone(forgotPhone)
-                      ? '✓ 手机号格式正确'
-                      : `✗ 请输入正确的11位手机号（已输入 ${forgotPhone.length} 位）`}
+                      ? '手机号格式正确'
+                      : forgotPhone.length < 11 ? '手机号位数不足' : '请输入正确的手机号'}
                   </div>
                 )}
               </div>
@@ -627,28 +644,27 @@ function AuthPage({ onLogin }) {
                   const { score, label, color } = getPasswordStrength(resetPassword);
                   const rules = getPasswordRules(resetPassword);
                   return (
-                    <div className="password-feedback">
-                      <div className="strength-bars-row">
-                        {[1,2,3,4,5].map(i => (
-                          <div
-                            key={i}
-                            className="strength-bar-seg"
+                    <div className="password-feedback-modern">
+                      <div className="strength-header">
+                        <div className="strength-bar-modern">
+                          <div 
+                            className="strength-fill"
                             style={{
-                              background: i <= score ? color : 'rgba(0,0,0,0.08)',
-                              transition: 'background 0.3s'
+                              width: `${(score / 5) * 100}%`,
+                              background: color
                             }}
                           />
-                        ))}
-                        <span className="strength-label" style={{ color }}>{label}</span>
+                        </div>
+                        <span className="strength-text" style={{ color }}>{label}</span>
                       </div>
-                      <ul className="password-rules">
+                      <div className="password-checklist">
                         {rules.map((r, i) => (
-                          <li key={i} className={r.pass ? 'rule-pass' : 'rule-fail'}>
-                            <span className="rule-icon">{r.pass ? '✓' : '○'}</span>
-                            {r.text}
-                          </li>
+                          <div key={i} className={`check-item ${r.pass ? 'checked' : ''}`}>
+                            <span className="check-dot" />
+                            <span className="check-text">{r.text}</span>
+                          </div>
                         ))}
-                      </ul>
+                      </div>
                     </div>
                   );
                 })()}
