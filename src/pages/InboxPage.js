@@ -152,14 +152,16 @@ function InboxPage() {
         <div className="header-badge">{emails.length}封</div>
       </div>
 
-      <div className="seg-tabs">
-        <button className={`seg-tab ${activeTab === 'emails' ? 'active' : ''}`} onClick={() => setActiveTab('emails')}>
-          邮件解析
-        </button>
-        <button className={`seg-tab ${activeTab === 'funnel' ? 'active' : ''}`} onClick={() => setActiveTab('funnel')}>
-          状态漏斗
-        </button>
-      </div>
+      {!selectedEmail && (
+        <div className="seg-tabs">
+          <button className={`seg-tab ${activeTab === 'emails' ? 'active' : ''}`} onClick={() => setActiveTab('emails')}>
+            邮件解析
+          </button>
+          <button className={`seg-tab ${activeTab === 'funnel' ? 'active' : ''}`} onClick={() => setActiveTab('funnel')}>
+            状态漏斗
+          </button>
+        </div>
+      )}
 
       <div className="scroll-area">
         {activeTab === 'emails' && !selectedEmail && (
