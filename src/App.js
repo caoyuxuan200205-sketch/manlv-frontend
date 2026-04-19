@@ -9,6 +9,7 @@ import ChatPage from './pages/ChatPage';
 import LearnPage from './pages/LearnPage';
 import InboxPage from './pages/InboxPage';
 import ProfilePage from './pages/ProfilePage';
+import ScrollToTop from './components/ScrollToTop';
 import { BotIcon, CloseIcon, SendIcon, MinusIcon } from './components/Icons';
 
 function App() {
@@ -76,6 +77,7 @@ function App() {
 
   return (
     <Router>
+      <ScrollToTop />
       <div className="app-shell">
         <Routes>
           <Route path="/" element={isLoggedIn ? <Navigate to="/home" /> : <AuthPage onLogin={() => setIsLoggedIn(true)} />} />

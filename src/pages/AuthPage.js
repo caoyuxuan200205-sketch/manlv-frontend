@@ -48,10 +48,10 @@ function AuthPage({ onLogin }) {
 
     const map = [
       { label: '极弱', color: '#ff4d4f' },
-      { label: '弱',   color: '#ff7a45' },
-      { label: '一般', color: '#ffa940' },
-      { label: '强',   color: '#73d13d' },
-      { label: '很强', color: '#36cfc9' },
+      { label: '弱',   color: '#ffa940' },
+      { label: '一般', color: '#ffd666' },
+      { label: '强',   color: '#000000' },
+      { label: '很强', color: '#000000' },
     ];
     return { score, ...map[Math.min(score - 1, 4)] };
   };
@@ -370,13 +370,9 @@ function AuthPage({ onLogin }) {
                     required 
                   />
                 </div>
-                {registerPhone && (
-                  <div className={`input-hint ${
-                    isValidPhone(registerPhone) ? 'hint-success' : 'hint-error'
-                  }`}>
-                    {isValidPhone(registerPhone)
-                      ? '手机号格式正确'
-                      : registerPhone.length < 11 ? '手机号位数不足' : '请输入正确的手机号'}
+                {registerPhone && !isValidPhone(registerPhone) && (
+                  <div className="input-hint hint-error">
+                    {registerPhone.length < 11 ? '手机号位数不足' : '请输入正确的手机号'}
                   </div>
                 )}
               </div>
@@ -433,9 +429,6 @@ function AuthPage({ onLogin }) {
                   <div className="input-hint hint-error">
                     姓名至少需要2个字符
                   </div>
-                )}
-                {!registerName && (
-                  <div className="input-hint">用于面试时身份核验</div>
                 )}
               </div>
 
@@ -522,11 +515,9 @@ function AuthPage({ onLogin }) {
                     {showPassword['register-password-confirm'] ? <EyeOffIcon size={16} /> : <EyeIcon size={16} />}
                   </button>
                 </div>
-                {registerConfirm && (
-                  <div className={`input-hint ${registerConfirm === registerPassword ? 'hint-success' : 'hint-error'}`}>
-                    {registerConfirm === registerPassword
-                      ? '两次密码一致'
-                      : '两次密码不一致'}
+                {registerConfirm && registerConfirm !== registerPassword && (
+                  <div className="input-hint hint-error">
+                    两次密码不一致
                   </div>
                 )}
               </div>
@@ -580,13 +571,9 @@ function AuthPage({ onLogin }) {
                     required 
                   />
                 </div>
-                {forgotPhone && (
-                  <div className={`input-hint ${
-                    isValidPhone(forgotPhone) ? 'hint-success' : 'hint-error'
-                  }`}>
-                    {isValidPhone(forgotPhone)
-                      ? '手机号格式正确'
-                      : forgotPhone.length < 11 ? '手机号位数不足' : '请输入正确的手机号'}
+                {forgotPhone && !isValidPhone(forgotPhone) && (
+                  <div className="input-hint hint-error">
+                    {forgotPhone.length < 11 ? '手机号位数不足' : '请输入正确的手机号'}
                   </div>
                 )}
               </div>
@@ -696,11 +683,9 @@ function AuthPage({ onLogin }) {
                     {showPassword['reset-password-confirm'] ? <EyeOffIcon size={16} /> : <EyeIcon size={16} />}
                   </button>
                 </div>
-                {resetConfirm && (
-                  <div className={`confirm-hint ${resetConfirm === resetPassword ? 'confirm-ok' : 'confirm-no'}`}>
-                    {resetConfirm === resetPassword
-                      ? '✓ 两次密码一致'
-                      : '✗ 两次密码不一致'}
+                {resetConfirm && resetConfirm !== resetPassword && (
+                  <div className="input-hint hint-error">
+                    两次密码不一致
                   </div>
                 )}
               </div>

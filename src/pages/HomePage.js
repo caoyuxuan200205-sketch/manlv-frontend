@@ -59,7 +59,7 @@ function HomePage() {
   const urgentTask = tasks.find(t => t.urgent && !t.done);
 
   const trips = [
-    { id: 1, school: '清华大学 建筑学院', city: '北京', date: '7月18–22日', type: 'camp', status: 'upcoming', progress: 65, daysLeft: 3 },
+    { id: 1, school: '清华大学 建筑学院', city: '北京', date: '7月18–22日', type: 'camp', status: 'upcoming', progress: 65, daysLeft: 3, conflict: true },
     { id: 2, school: '同济大学 建筑与城规学院', city: '上海', date: '7月20日', type: 'interview', status: 'confirmed', progress: 40, conflict: true },
     { id: 3, school: '东南大学 建筑学院', city: '南京', date: '7月25–28日', type: 'camp', status: 'pending', progress: 15 },
   ];
@@ -113,13 +113,6 @@ function HomePage() {
         </div>
         <div className="header-right">
           <div className="season-badge">保研季 2026</div>
-          <Link to="/profile" className="header-avatar">
-            <img
-              src={user?.avatar || '/ai-avatar-monkey.png'}
-              alt={user?.name || '用户'}
-              className="header-avatar-img"
-            />
-          </Link>
         </div>
       </div>
 
@@ -294,16 +287,23 @@ function HomePage() {
         </div>
         <div className="trip-list-modern">
           {trips.map((trip) => (
-            <Link key={trip.id} to={`/trip/${trip.school}`} className={`trip-card-modern ${trip.status}`}>
+            <Link key={trip.id} to={`/trip/${trip.school}`} className={`trip-card-modern ${trip.conflict ? 'has-conflict' : 'is-normal'}`}>
               <div className="trip-status-indicator">
-                <div className={`status-dot status-${trip.status}`} />
-                {trip.conflict && <div className="status-conflict">!</div>}
+                <div className={`status-dot ${trip.conflict ? 'conflict' : 'normal'}`} />
               </div>
               <div className="trip-content">
                 <div className="trip-main">
                   <div className="trip-school-modern">{trip.school}</div>
-                  <div className={`trip-badge-modern badge-${trip.type}`}>
-                    {trip.type === 'camp' ? '夏令营' : trip.type === 'interview' ? '面试' : '待确认'}
+                  <div className="trip-main-right">
+                    {trip.conflict && (
+                      <div className="trip-conflict-tag">
+                        <WarningIcon size={12} />
+                        <span>冲突</span>
+                      </div>
+                    )}
+                    <div className={`trip-badge-modern badge-${trip.type}`}>
+                      {trip.type === 'camp' ? '夏令营' : trip.type === 'interview' ? '面试' : '待确认'}
+                    </div>
                   </div>
                 </div>
                 <div className="trip-details">

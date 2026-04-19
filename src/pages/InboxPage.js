@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import BottomNav from '../components/BottomNav';
-import { MailIcon, CheckIcon, WarningIcon, ChevronRightIcon, InboxIcon, SendIcon, CloseIcon } from '../components/Icons';
+import { MailIcon, CheckIcon, WarningIcon, ChevronRightIcon, InboxIcon, SendIcon, CloseIcon, BotIcon } from '../components/Icons';
 import EmailParser from '../services/EmailParser';
 import EmailReplyGenerator from '../services/EmailReplyGenerator';
 
@@ -68,10 +68,29 @@ function InboxPage() {
   const [parseProgress, setParseProgress] = useState({ current: 0, total: emailSamples.length });
   const [lastParseTime, setLastParseTime] = useState(new Date());
   const [isSending, setIsSending] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [toast, setToast] = useState('');
   const [showRawEmail, setShowRawEmail] = useState(false);
+  const [user, setUser] = useState(null);
   // 当前使用静态邮件数据
   const emails = emailSamples;
+
+  useEffect(() => {
+    fetchUserData();
+  }, []);
+
+  const fetchUserData = async () => {
+    const token = localStorage.getItem('manlv_token');
+    if (!token) return;
+    try {
+      const res = await fetch('http://localhost:3001/api/user', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) setUser(await res.json());
+    } catch (error) {
+      console.error('Fetch user error:', error);
+    }
+  };
 
   const showToast = (msg) => {
     setToast(msg);
@@ -90,17 +109,25 @@ function InboxPage() {
   // 生成回复
   const handleGenerateReply = (type) => {
     if (!parsedData) return;
-    const userInfo = {
-      name: '张三',
-      university: '浙江大学',
-      major: '建筑学',
-      studentId: '1234567',
-      phone: '138****1234',
-      email: 'student@zju.edu.cn'
-    };
-    const reply = EmailReplyGenerator.generateReply(parsedData, type, userInfo);
-    setGeneratedReply(reply);
     setReplyType(type);
+    setIsGenerating(true); 
+    setGeneratedReply(null);
+
+    const userInfo = {
+      name: user?.name || '曹宇轩',
+      university: '东南大学',
+      major: user?.major || '建筑学',
+      studentId: '1234567',
+      phone: user?.email || '17375792820',
+      email: user?.email || 'cao@seu.edu.cn'
+    };
+
+    // 模拟 2.5 秒的 AI 工作时间
+    setTimeout(() => {
+      const reply = EmailReplyGenerator.generateReply(parsedData, type, userInfo);
+      setGeneratedReply(reply);
+      setIsGenerating(false);
+    }, 2500);
   };
 
   // 发送邮件模拟
@@ -369,7 +396,7 @@ function InboxPage() {
             )}
 
             {/* 回复生成面板 */}
-            {!generatedReply ? (
+            {!generatedReply && !isSending && (
               <div className="reply-generator">
                 <div className="generator-label">快速生成回复</div>
                 <div className="reply-buttons">
@@ -387,7 +414,27 @@ function InboxPage() {
                   </button>
                 </div>
               </div>
-            ) : (
+            )}
+
+            {/* 生成的回复预览 */}
+            {isGenerating && (
+              <div className="reply-loading-card">
+                <div className="reply-loading-content">
+                  <div className="reply-loading-icon">
+                    <div className="loading-orbit" />
+                    <BotIcon size={24} />
+                  </div>
+                  <div className="reply-loading-text">
+                    <span>漫旅 AI 正在为你撰写邮件...</span>
+                    <div className="reply-loading-dots">
+                      <span /> <span /> <span />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {generatedReply && !isGenerating && (
               <div className="generated-reply">
                 <div className="reply-header">
                   <div className="reply-type-badge" style={{
@@ -404,7 +451,17 @@ function InboxPage() {
                 </div>
                 <div className="reply-body">
                   <strong>内容：</strong>
-                  <div className="reply-text">{generatedReply.body}</div>
+                  <textarea 
+                    className="reply-text-editable" 
+                    value={generatedReply.body}
+                    onChange={(e) => {
+                      setGeneratedReply({
+                        ...generatedReply,
+                        body: e.target.value
+                      });
+                    }}
+                    rows={8}
+                  />
                 </div>
                 <div className="reply-actions">
                   <button 

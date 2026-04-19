@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 import { MapIcon, BookmarkIcon, LocationIcon, SearchIcon, ChevronRightIcon, BotIcon, WarningIcon } from '../components/Icons';
-import MockInterviewService from '../services/MockInterviewService';
 import AMapLoader from '@amap/amap-jsapi-loader';
 import SpotRecommendationService from '../services/SpotRecommendationService';
 
@@ -315,33 +314,15 @@ function LearnPage() {
     setSelectedInterview(interview);
     setIsLoading(true);
     try {
-      console.log('[启动面试]', {
-        school: interview.school,
-        major: interview.major,
-        resumeTextLength: finalResumeText.length,
-        hasResumeFile: !!resumeFile
-      });
-
-      // 调用真实的豆包 AI API 初始化面试
-      const result = await MockInterviewService.initializeInterview({
-        resumeText: finalResumeText,
-        resumeFile: resumeFile?.name,
-        schoolName: interview.school,
-        majorName: interview.major,
-        interviewCity: interview.city,
-        interviewType: interview.type,
-        difficulty: 'medium'
-      });
-
-      // 成功初始化后导航到面试页面
       navigate('/chat', {
         state: {
-          prefill: `开始AI模拟面试：${interview.school} ${interview.major}\n\n${result.first_question}`,
           interviewMode: true,
-          sessionId: result.session_id,
           schoolName: interview.school,
           majorName: interview.major,
-          interviewCity: interview.city
+          interviewCity: interview.city,
+          interviewType: interview.type,
+          difficulty: '中级',
+          resumeContent: finalResumeText
         }
       });
       showToast('面试已启动！');

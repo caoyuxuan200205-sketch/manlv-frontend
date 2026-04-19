@@ -19,7 +19,24 @@ function SchedulePage() {
 
   useEffect(() => {
     fetchInterviews();
+    fetchUserData();
   }, []);
+
+  const fetchUserData = async () => {
+    const token = localStorage.getItem('manlv_token');
+    if (!token) return;
+    try {
+      const res = await fetch('http://localhost:3001/api/user', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const userData = await res.json();
+        setNewInterview(prev => ({ ...prev, major: userData.major || '' }));
+      }
+    } catch (error) {
+      console.error('Fetch user error:', error);
+    }
+  };
 
   const showToast = (msg) => {
     setToast(msg);
@@ -79,17 +96,30 @@ function SchedulePage() {
   const handleDeleteInterview = async (id) => {
     if (!window.confirm('确定要删除这场面试吗？')) return;
     const token = localStorage.getItem('manlv_token');
+    
+    // 打印调试信息，确保 ID 正确
+    console.log('[Delete Interview] Attempting to delete ID:', id);
+
     try {
       const res = await fetch(`http://localhost:3001/api/interviews/${id}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
+      
       if (res.ok) {
         showToast('删除成功');
         fetchInterviews();
+      } else {
+        const errorData = await res.json().catch(() => ({}));
+        console.error('[Delete Interview] Failed:', res.status, errorData);
+        showToast(`删除失败: ${errorData.error || '服务器错误'}`);
       }
     } catch (e) {
-      showToast('删除失败');
+      console.error('[Delete Interview] Network Error:', e);
+      showToast('网络错误，请检查连接');
     }
   };
 

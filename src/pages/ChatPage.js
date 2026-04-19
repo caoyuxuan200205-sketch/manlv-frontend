@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { BackIcon, SendIcon } from '../components/Icons';
 import { RobotOne } from '@icon-park/react';
-import MockInterviewService from '../services/MockInterviewService';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -12,20 +11,18 @@ function ChatPage() {
   const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3001';
 
   const isInterviewMode = location.state?.interviewMode || false;
-  const sessionId = location.state?.sessionId;
   const schoolName = location.state?.schoolName;
   const majorName = location.state?.majorName;
+  const interviewCity = location.state?.interviewCity;
+  const interviewType = location.state?.interviewType;
+  const difficulty = location.state?.difficulty || '中级';
+  const resumeContent = location.state?.resumeContent;
 
   const [userName, setUserName] = useState('我');
-  const [messages, setMessages] = useState([
+  const [messages, setMessages] = useState(
     isInterviewMode
-      ? {
-          role: 'ai',
-          content: location.state?.prefill || '欢迎参加模拟面试，我们现在可以开始第一题。',
-          time: '09:24',
-          isInterview: true
-        }
-      : {
+      ? []
+      : [{
           role: 'ai',
           content:
             '你好，我是漫旅 AI。\n\n我可以帮你做行程冲突分析、面试准备、城市备考和情绪疏导。你可以直接提问，或先从下方快捷问题开始。',
@@ -35,11 +32,12 @@ function ChatPage() {
             '请根据我的安排生成未来7天备考计划（按天列出）',
             '查一下我下一场面试城市明天的天气，并给出穿搭建议'
           ]
-        }
-  ]);
+        }]
+  );
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [showContextPanel, setShowContextPanel] = useState(!isInterviewMode);
+  const hasAutoStartedInterviewRef = useRef(false);
 
   const messagesEndRef = useRef(null);
   const inputAreaRef = useRef(null);
@@ -122,6 +120,14 @@ function ChatPage() {
 
   const getTime = () => new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
   const userAvatarText = (userName || '我').trim().slice(0, 1);
+  const interviewContext = {
+    school_name: schoolName || '',
+    major_name: majorName || '',
+    interview_city: interviewCity || '',
+    interview_type: interviewType || '',
+    difficulty,
+    resume_content: resumeContent || ''
+  };
 
   const contextChips = [
     { label: '冲突检查', msg: '请先检查我的面试安排是否冲突，再给出按优先级排序的处理建议。' },
@@ -130,42 +136,26 @@ function ChatPage() {
     { label: '1分钟自介', msg: '请帮我生成一版1分钟自我介绍，突出我的专业优势和项目亮点。' }
   ];
 
-  const handleSend = async (text = inputValue) => {
+  const buildApiMessages = (text) => {
+    const history = messages
+      .filter((msg) => (msg.role === 'user' || msg.role === 'ai') && msg.content?.trim())
+      .map((msg) => ({
+        role: msg.role === 'ai' ? 'assistant' : 'user',
+        content: msg.content
+      }));
+
+    return [...history, { role: 'user', content: text }];
+  };
+
+  const requestAiReply = async ({ text, appendUser = true }) => {
     if (!text.trim()) return;
 
     if (!isInterviewMode) setShowContextPanel(false);
-    setMessages((prev) => [...prev, { role: 'user', content: text, time: getTime() }]);
+    if (appendUser) {
+      setMessages((prev) => [...prev, { role: 'user', content: text, time: getTime() }]);
+    }
     setInputValue('');
     setIsTyping(true);
-
-    if (isInterviewMode && sessionId) {
-      try {
-        const result = await MockInterviewService.submitAnswer(sessionId, text);
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: 'ai',
-            content: result.feedback || result.next_question || '收到，我们继续下一题。',
-            time: getTime(),
-            isInterview: true
-          }
-        ]);
-      } catch (error) {
-        console.error('[模拟面试对话失败]', error);
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: 'ai',
-            content: '面试系统暂时不可用，请稍后重试。',
-            time: getTime(),
-            isInterview: true
-          }
-        ]);
-      } finally {
-        setIsTyping(false);
-      }
-      return;
-    }
 
     try {
       const token = localStorage.getItem('manlv_token');
@@ -194,7 +184,6 @@ function ChatPage() {
           time: getTime()
         }
       ]);
-      setIsTyping(false);
 
       const response = await fetch(`${apiBaseUrl}/api/ai/chat`, {
         method: 'POST',
@@ -202,7 +191,11 @@ function ChatPage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ message: text })
+        body: JSON.stringify({
+          mode: isInterviewMode ? 'interviewer' : 'advisor',
+          messages: buildApiMessages(text),
+          context: isInterviewMode ? interviewContext : undefined
+        })
       });
 
       if (!response.ok) throw new Error('AI 服务暂时不可用');
@@ -225,26 +218,29 @@ function ChatPage() {
             const parsed = JSON.parse(raw);
 
             if (parsed.type === 'thinking') {
+              setIsTyping(false); // 只要开始思考，就关闭基础加载状态
               const toolLabel =
                 {
-                  get_user_profile: '读取用户资料',
+                  get_user_profile: '分析用户资料',
                   list_interviews: '查询面试安排',
                   create_interview: '创建面试记录',
                   analyze_schedule_conflicts: '分析行程冲突',
-                  get_weather: '查询天气'
+                  get_weather: '查询天气',
+                  search_hotels: '搜索周边酒店'
                 }[parsed.tool] || parsed.tool;
 
               setMessages((prev) =>
                 prev.map((msg) =>
-                  msg.id === msgId ? { ...msg, thinking: `正在调用工具：${toolLabel}` } : msg
+                  msg.id === msgId ? { ...msg, thinking: toolLabel } : msg
                 )
               );
             }
 
             if (parsed.type === 'text') {
+              setIsTyping(false);
               setMessages((prev) =>
                 prev.map((msg) =>
-                  msg.id === msgId ? { ...msg, content: msg.content + parsed.content, thinking: '' } : msg
+                  msg.id === msgId ? { ...msg, content: msg.content + parsed.content, thinking: '', isStreaming: true } : msg
                 )
               );
             }
@@ -252,7 +248,7 @@ function ChatPage() {
             if (parsed.type === 'done') {
               setMessages((prev) =>
                 prev.map((msg) =>
-                  msg.id === msgId ? { ...msg, usedTools: parsed.usedTools || [], thinking: '' } : msg
+                  msg.id === msgId ? { ...msg, usedTools: parsed.usedTools || [], thinking: '', isStreaming: false } : msg
                 )
               );
             }
@@ -284,48 +280,22 @@ function ChatPage() {
     }
   };
 
+  const handleSend = async (text = inputValue) => {
+    await requestAiReply({ text, appendUser: true });
+  };
+
+  useEffect(() => {
+    if (!isInterviewMode || hasAutoStartedInterviewRef.current) return;
+    hasAutoStartedInterviewRef.current = true;
+    requestAiReply({ text: '开始面试', appendUser: false });
+  }, [isInterviewMode]);
+
   const handleFinishInterview = async () => {
-    if (!isInterviewMode || !sessionId) return;
-
-    try {
-      setIsTyping(true);
-      const result = await MockInterviewService.finishInterview(sessionId);
-      const scoreMessage = `
-【面试评估报告】
-
-总体评分：${result.total_score || 0}/100
-等级：${result.equivalent_level || '良好'}
-
-详细反馈：
-${result.feedback || '整体表现不错，建议继续巩固知识点并强化表达。'}
-
-后续建议：
-${(result.suggestions || ['补齐高频问题回答模板', '复盘本次薄弱项', '做一次计时模拟']).map((s, i) => `${i + 1}. ${s}`).join('\n')}
-      `.trim();
-
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: 'ai',
-          content: scoreMessage,
-          time: getTime(),
-          isInterview: true
-        }
-      ]);
-    } catch (error) {
-      console.error('[面试结束失败]', error);
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: 'ai',
-          content: '面试评分系统暂时不可用。',
-          time: getTime(),
-          isInterview: true
-        }
-      ]);
-    } finally {
-      setIsTyping(false);
-    }
+    if (!isInterviewMode) return;
+    await requestAiReply({
+      text: '面试结束，请根据我们刚才的完整面试过程输出结构化复盘报告，并严格遵守你的复盘报告格式。',
+      appendUser: true
+    });
   };
 
   return (
@@ -379,10 +349,24 @@ ${(result.suggestions || ['补齐高频问题回答模板', '复盘本次薄弱�
                   <div className="msg-avatar-mini user">{userAvatarText}</div>
                 </div>
               )}
-              {msg.thinking && <div className="msg-thinking">{msg.thinking}</div>}
-              {msg.content?.trim() ? (
-                <div className="msg-bubble">
+
+              {/* 合并加载/思考/内容状态 */}
+              {msg.role === 'ai' && !msg.content?.trim() ? (
+                <div className="typing-indicator-pro">
+                  <div className="typing-bars">
+                    <div className="typing-bar" />
+                    <div className="typing-bar" />
+                    <div className="typing-bar" />
+                    <div className="typing-bar" />
+                  </div>
+                  <span className="typing-text">
+                    {msg.thinking ? `正在${msg.thinking}...` : 'AI 正在思考...'}
+                  </span>
+                </div>
+              ) : msg.content?.trim() ? (
+                <div className={`msg-bubble ${msg.role === 'user' ? 'user' : ''} ${msg.isStreaming ? 'streaming' : ''}`}>
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+                  {msg.isStreaming && <span className="streaming-cursor" />}
                 </div>
               ) : null}
 
@@ -412,23 +396,6 @@ ${(result.suggestions || ['补齐高频问题回答模板', '复盘本次薄弱�
           </div>
         ))}
 
-        {isTyping && isInterviewMode && (
-          <div className="msg ai">
-            <div className="msg-content">
-              <div className="msg-ai-meta">
-                <div className="msg-avatar-mini">
-                  {isInterviewMode ? <span className="ai-avatar-text">AI</span> : <RobotOne theme="outline" size="12" fill="#333" />}
-                </div>
-                <span className="msg-ai-name">{isInterviewMode ? 'Interview AI' : 'ManLv AI'}</span>
-              </div>
-              <div className="typing-indicator">
-                <div className="typing-dot" />
-                <div className="typing-dot" />
-                <div className="typing-dot" />
-              </div>
-            </div>
-          </div>
-        )}
         <div ref={messagesEndRef} />
       </div>
 

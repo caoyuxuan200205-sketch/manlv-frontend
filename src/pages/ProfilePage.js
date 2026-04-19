@@ -149,6 +149,7 @@ function ProfilePage({ onLogout }) {
                     </button>
                   ))}
                 </div>
+                <div className="major-coming-soon">更多专业敬请期待...</div>
               </div>
             ) : (
               <div className="input-group">
@@ -213,7 +214,7 @@ function ProfilePage({ onLogout }) {
           <span className="page-title-icon"><ProfileIcon size={18} /></span>
           <div>
             <div className="page-title">我的</div>
-            <div className="page-subtitle">{user?.name} · 建筑学 2026</div>
+            <div className="page-subtitle">{user?.name} · {user?.major || '建筑学'} 2026</div>
           </div>
         </div>
       </div>
@@ -223,7 +224,7 @@ function ProfilePage({ onLogout }) {
         <div className="profile-avatar">{user?.name?.charAt(0) || '林'}</div>
         <div className="profile-info">
           <div className="profile-name">{user?.name}</div>
-          <div className="profile-meta">建筑学 · 本科 · 大四在读</div>
+          <div className="profile-meta">{user?.major || '建筑学'} · 本科 · 大四在读</div>
           <div className="profile-stats">
             <span><strong>3</strong> 城市</span>
             <span><strong>6</strong> 院校</span>

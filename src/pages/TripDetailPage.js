@@ -46,31 +46,47 @@ function TripDetailPage() {
   const openChat = (msg) => navigate('/chat', { state: { prefill: msg } });
 
   const getTlIcon = (status) => {
-    if (status === 'done') return <CheckIcon size={14} />;
-    if (status === 'active') return <BotIcon size={14} />;
-    return <CalendarIcon size={14} />;
+    if (status === 'done') return <CheckIcon size={12} />;
+    // Option 1: Minimalist dots, active is just a smaller bot icon or just a dot
+    if (status === 'active') return <div className="tl-active-dot" />;
+    return null; // For todo, just the empty dot
   };
 
   return (
-    <div className="page">
+    <div className="page" style={{ background: 'var(--paper)' }}>
       <div className="trip-detail-header">
-        <button className="detail-back" onClick={() => navigate(-1)}>
-          <BackIcon size={16} /> 返回
-        </button>
-        <div className="detail-school">{school}</div>
-        <div className="detail-city-row">
-          <span><LocationIcon size={12} /> 北京</span>
-          <span className="dot">·</span>
-          <span>7月18–22日</span>
-          <span className="dot">·</span>
-          <span>夏令营</span>
+        <div className="trip-header-visual" />
+        <div className="trip-header-content">
+          <button className="detail-back" onClick={() => navigate(-1)}>
+            <BackIcon size={14} /> 返回
+          </button>
+          <div className="detail-school">{school}</div>
+          <div className="detail-city-row">
+            <div className="detail-city-badge">
+              <LocationIcon size={12} /> 北京
+            </div>
+            <div className="detail-city-badge">
+              <CalendarIcon size={12} /> 7月18–22日
+            </div>
+            <div className="detail-city-badge gold">
+              夏令营
+            </div>
+          </div>
         </div>
       </div>
 
       <div className="detail-tabs">
-        {['timeline', 'study', 'city'].map((tab) => (
-          <button key={tab} className={`detail-tab ${activeTab === tab ? 'active' : ''}`} onClick={() => setActiveTab(tab)}>
-            {tab === 'timeline' ? '行程规划' : tab === 'study' ? '备考要点' : '城市导览'}
+        {[
+          { id: 'timeline', label: '行程规划' },
+          { id: 'study', label: '备考要点' },
+          { id: 'city', label: '城市导览' }
+        ].map((tab) => (
+          <button 
+            key={tab.id} 
+            className={`detail-tab ${activeTab === tab.id ? 'active' : ''}`} 
+            onClick={() => setActiveTab(tab.id)}
+          >
+            {tab.label}
           </button>
         ))}
       </div>
@@ -87,15 +103,13 @@ function TripDetailPage() {
                   <div className="tl-sub">{item.sub}</div>
                   {item.tag && (
                     <span className={`tl-tag ${item.tagType === 'warn' ? 'warn' : item.tagType === 'gold' ? 'gold' : ''}`}>
-                      {item.tagType === 'warn' && <WarningIcon size={10} />} {item.tag}
+                      {item.tag}
                     </span>
                   )}
                   {item.status === 'active' && (
-                    <div style={{ marginTop: '8px' }}>
-                      <button className="ask-ai-btn" onClick={() => openChat('帮我整理清华建筑学院的核心导师方向和近年研究热点')}>
-                        <BotIcon size={13} /> 让AI帮我备考
-                      </button>
-                    </div>
+                    <button className="ask-ai-btn" onClick={() => openChat('帮我整理清华建筑学院的核心导师方向和近年研究热点')}>
+                      <BotIcon size={14} /> 让AI帮我备考
+                    </button>
                   )}
                 </div>
               </div>
@@ -103,9 +117,10 @@ function TripDetailPage() {
           </div>
         )}
 
+
         {activeTab === 'study' && (
           <>
-            <div style={{ marginBottom: '14px', fontSize: '12px', color: 'var(--ink-light)', lineHeight: 1.6 }}>
+            <div className="detail-intro-text">
               以下备考要点由 AI 根据清华建筑学院历年面试风格生成，已标注优先级。
             </div>
             {studyCards.map((card, index) => (
@@ -118,7 +133,7 @@ function TripDetailPage() {
                   {card.points.map((point, i) => <div key={i} className="study-point">{point}</div>)}
                 </div>
                 <button className="ask-ai-btn" onClick={() => openChat(`帮我深度讲解${card.title}的相关内容`)}>
-                  <BotIcon size={13} /> 深度问AI
+                  <BotIcon size={14} /> 深度问AI
                 </button>
               </div>
             ))}
@@ -127,7 +142,7 @@ function TripDetailPage() {
 
         {activeTab === 'city' && (
           <>
-            <div style={{ marginBottom: '14px', fontSize: '12px', color: 'var(--ink-light)', lineHeight: 1.6 }}>
+            <div className="detail-intro-text">
               北京是你这次保研之旅的第一站。以下是与建筑专业最相关的游学路线。
             </div>
             {cityCards.map((card, index) => (
@@ -141,7 +156,7 @@ function TripDetailPage() {
                 </div>
                 {index === 0 && (
                   <button className="ask-ai-btn" onClick={() => openChat('帮我制定一个在北京备考期间的1天建筑游学路线')}>
-                    <BotIcon size={13} /> 规划游学路线
+                    <BotIcon size={14} /> 规划游学路线
                   </button>
                 )}
               </div>
