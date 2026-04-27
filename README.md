@@ -76,7 +76,41 @@
 
 ---
 
-## 🚀 快速开始
+## � API 文档
+
+前端通过以下 API 与后端交互：
+
+### 认证相关
+- `POST /api/auth/register` - 用户注册
+- `POST /api/auth/login` - 用户登录
+- `POST /api/auth/reset-password` - 重置密码
+
+### 用户管理
+- `GET /api/user` - 获取用户信息
+- `PUT /api/user` - 更新用户信息
+- `GET /api/user/memory` - 获取用户记忆
+- `PUT /api/user/memory` - 更新用户记忆
+
+### 邮件管理
+- `GET /api/emails` - 获取用户邮件列表
+- `POST /api/emails` - 创建邮件
+- `PUT /api/emails/:id` - 更新邮件
+- `DELETE /api/emails/:id` - 删除邮件
+
+### 面试管理
+- `GET /api/interviews` - 获取面试列表
+- `POST /api/interviews` - 添加面试安排
+- `DELETE /api/interviews/:id` - 删除面试
+
+### AI 功能
+- `POST /api/ai/chat` - AI 对话接口
+
+### 文件处理
+- `POST /api/parse-resume` - 简历文件解析
+
+---
+
+## �🚀 快速开始
 
 ### 环境要求
 
@@ -85,6 +119,17 @@
 - DashScope API Key（[申请地址](https://dashscope.aliyuncs.com)）
 
 ### 前端启动
+
+如果您已经克隆了项目到本地：
+
+```bash
+cd ManLv
+npm install
+npm start
+# 访问 http://localhost:3000
+```
+
+如果需要从 GitHub 克隆：
 
 ```bash
 # 克隆前端仓库
@@ -202,6 +247,87 @@ manlv-backend/
 | `list_interviews` | 查询面试安排列表 |
 | `create_interview` | 创建新面试记录 |
 | `analyze_schedule_conflicts` | 分析行程冲突 |
+
+---
+
+## 🚀 部署说明
+
+### 开发环境部署
+
+1. **安装依赖**
+```bash
+npm install
+```
+
+2. **启动开发服务器**
+```bash
+npm start
+```
+
+3. **构建生产版本**
+```bash
+npm run build
+```
+
+### 生产环境部署
+
+1. **构建优化版本**
+```bash
+npm run build
+```
+
+2. **部署到服务器**
+   - 将 `build/` 目录下的文件部署到 Web 服务器
+   - 配置反向代理指向后端 API
+
+3. **Nginx 配置示例**
+```nginx
+server {
+    listen 80;
+    server_name your-domain.com;
+
+    # 前端静态文件
+    location / {
+        root /path/to/build;
+        index index.html;
+        try_files $uri $uri/ /index.html;
+    }
+
+    # 代理 API 请求到后端
+    location /api {
+        proxy_pass http://localhost:3001;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+```
+
+### Docker 部署
+
+```dockerfile
+FROM nginx:alpine
+
+COPY build/ /usr/share/nginx/html
+
+COPY nginx.conf /etc/nginx/nginx.conf
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]
+```
+
+---
+
+## 📝 更新日志
+
+- **v1.0.0** (2024-04-27)
+  - 初始版本发布
+  - 支持用户认证、行程管理、邮件处理
+  - 集成 AI 对话和模拟面试功能
+  - 支持情景学习和情绪支持
 
 ---
 
