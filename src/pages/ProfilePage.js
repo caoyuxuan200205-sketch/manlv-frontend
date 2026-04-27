@@ -29,9 +29,16 @@ function ProfilePage({ onLogout }) {
   const [activeTab, setActiveTab] = useState('emotion');
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [editingField, setEditingField] = useState(null); // 'name', 'email', 'password', 'major'
+  const [editingField, setEditingField] = useState(null); // 'name', 'email', 'password', 'major', 'notification'
   const [editValue, setEditValue] = useState('');
   const [toast, setToast] = useState('');
+  
+  // 模拟通知设置的 state
+  const [notifSettings, setNotifSettings] = useState({
+    email: true,
+    schedule: true,
+    system: false
+  });
   
   const navigate = useNavigate();
 
@@ -77,6 +84,11 @@ function ProfilePage({ onLogout }) {
     if (editingField === 'email') body.email = finalValue;
     if (editingField === 'password') body.password = finalValue;
     if (editingField === 'major') body.major = finalValue;
+    if (editingField === 'notification') {
+      showToast('通知设置已保存');
+      setEditingField(null);
+      return;
+    }
 
     try {
       const res = await fetch('http://localhost:3001/api/user', {
@@ -111,12 +123,13 @@ function ProfilePage({ onLogout }) {
 
   // 编辑模态层
   if (editingField) {
-    const titles = { name: '修改姓名', email: '修改手机号', password: '修改密码', major: '设置专业方向' };
+    const titles = { name: '修改姓名', email: '修改手机号', password: '修改密码', major: '设置专业方向', notification: '通知提醒设置' };
     const icons = { 
       name: <ProfileIcon size={18} />, 
       email: <SettingsIcon size={18} />, 
       password: <SettingsIcon size={18} />,
-      major: <StarIcon size={18} />
+      major: <StarIcon size={18} />,
+      notification: <SettingsIcon size={18} />
     };
     
     return (
@@ -151,6 +164,42 @@ function ProfilePage({ onLogout }) {
                 </div>
                 <div className="major-coming-soon">更多专业敬请期待...</div>
               </div>
+            ) : editingField === 'notification' ? (
+              <div className="notification-settings" style={{ marginTop: '8px' }}>
+                <div className="notif-row">
+                  <div className="notif-label-wrap">
+                    <div className="notif-title">邮件解析提醒</div>
+                    <div className="notif-desc">新行程和截止日期识别</div>
+                  </div>
+                  <div 
+                    className={`toggle-switch ${notifSettings.email ? 'active' : ''}`}
+                    onClick={() => setNotifSettings(prev => ({...prev, email: !prev.email}))}
+                  ></div>
+                </div>
+                <div className="notif-row">
+                  <div className="notif-label-wrap">
+                    <div className="notif-title">行程变动提醒</div>
+                    <div className="notif-desc">面试临近或地点变更</div>
+                  </div>
+                  <div 
+                    className={`toggle-switch ${notifSettings.schedule ? 'active' : ''}`}
+                    onClick={() => setNotifSettings(prev => ({...prev, schedule: !prev.schedule}))}
+                  ></div>
+                </div>
+                <div className="notif-row">
+                  <div className="notif-label-wrap">
+                    <div className="notif-title">系统公告</div>
+                    <div className="notif-desc">新功能上线及版本更新</div>
+                  </div>
+                  <div 
+                    className={`toggle-switch ${notifSettings.system ? 'active' : ''}`}
+                    onClick={() => setNotifSettings(prev => ({...prev, system: !prev.system}))}
+                  ></div>
+                </div>
+                <div className="input-hint" style={{ marginTop: '24px', lineHeight: '1.5' }}>
+                  关闭提醒后，你可能会错过重要的院校通知和行程安排。
+                </div>
+              </div>
             ) : (
               <div className="input-group">
                 <label className="input-label">新的{titles[editingField].slice(2)}</label>
@@ -173,7 +222,7 @@ function ProfilePage({ onLogout }) {
             )}
           </div>
 
-          {editingField !== 'major' && (
+          {editingField !== 'major' && editingField !== 'notification' && (
             <div className="edit-actions">
               <button 
                 className={`save-action-btn ${!editValue.trim() ? 'disabled' : ''}`} 
@@ -204,7 +253,7 @@ function ProfilePage({ onLogout }) {
     { label: '专业方向', note: user?.major || '未设置', field: 'major' },
     { label: '手机号/邮箱', note: user?.email, field: 'email' },
     { label: '修改密码', note: '********', field: 'password' },
-    { label: '通知提醒', note: '已开启' },
+    { label: '通知提醒', note: (notifSettings.email || notifSettings.schedule || notifSettings.system) ? '已开启' : '已关闭', field: 'notification' },
   ];
 
   return (

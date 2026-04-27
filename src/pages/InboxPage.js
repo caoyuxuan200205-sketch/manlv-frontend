@@ -52,10 +52,10 @@ const emailSamples = [
 ];
 
 const funnelSteps = [
-  { label: '已申请', count: 6, pct: 100, color: 'var(--ink)' },
-  { label: '收到邀请', count: 4, pct: 67, color: 'var(--gold)' },
-  { label: '待面试', count: 3, pct: 50, color: 'var(--gold-light)' },
-  { label: '录取', count: 0, pct: 0, color: 'var(--teal)' },
+  { label: '已申请', count: 6, pct: 100, color: 'rgba(42,122,106,0.2)' },
+  { label: '收到邀请', count: 4, pct: 67, color: 'rgba(42,122,106,0.45)' },
+  { label: '待面试', count: 3, pct: 50, color: 'rgba(42,122,106,0.75)' },
+  { label: '录取', count: 0, pct: 0, color: 'rgba(42,122,106,1)' },
 ];
 
 function InboxPage() {
@@ -72,8 +72,43 @@ function InboxPage() {
   const [toast, setToast] = useState('');
   const [showRawEmail, setShowRawEmail] = useState(false);
   const [user, setUser] = useState(null);
+  const [expandedFunnelKey, setExpandedFunnelKey] = useState(null);
   // 当前使用静态邮件数据
   const emails = emailSamples;
+  const funnelKeyByIndex = ['applied', 'invited', 'pendingInterview', 'admitted'];
+
+  const uniqueSchools = Array.from(new Set(emails.map((item) => item.school).filter(Boolean)));
+  const invitedSchools = Array.from(new Set(
+    emails
+      .filter((item) => item.parsed || item.statusType === 'pending' || item.statusType === 'confirmed')
+      .map((item) => item.school)
+      .filter(Boolean)
+  ));
+  const pendingInterviewSchools = Array.from(new Set(
+    emails
+      .filter((item) => item.statusType === 'pending')
+      .map((item) => item.school)
+      .filter(Boolean)
+  ));
+  const admittedSchools = Array.from(new Set(
+    emails
+      .filter((item) => item.statusType === 'confirmed' && /录取|入营/.test(String(item.status || '')))
+      .map((item) => item.school)
+      .filter(Boolean)
+  ));
+
+  const funnelSchoolMap = {
+    applied: uniqueSchools,
+    invited: invitedSchools,
+    pendingInterview: pendingInterviewSchools,
+    admitted: admittedSchools
+  };
+
+  const baseCount = uniqueSchools.length;
+  const calcPct = (count) => {
+    if (baseCount <= 0) return 0;
+    return Math.max(0, Math.min(100, Math.round((count / baseCount) * 100)));
+  };
 
   useEffect(() => {
     fetchUserData();
@@ -104,6 +139,7 @@ function InboxPage() {
     setSelectedEmail(email);
     setGeneratedReply(null);
     setShowRawEmail(false);
+    setActiveTab('emails');
   };
 
   // 生成回复
@@ -493,28 +529,113 @@ function InboxPage() {
 
         {activeTab === 'funnel' && (
           <div style={{ padding: '16px 20px' }}>
-            <div className="section-label">院校申请进度</div>
+            <div className="section-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>院校申请进度</span>
+              <span className="season-badge" style={{ fontSize: '10px', padding: '4px 8px' }}>2026秋季申请</span>
+            </div>
             <div className="funnel-container">
-              {funnelSteps.map((step, i) => (
-                <div className="funnel-row" key={i}>
-                  <div className="funnel-label">{step.label}</div>
-                  <div className="funnel-bar-wrap">
-                    <div
-                      className="funnel-bar"
-                      style={{
-                        width: `${step.pct}%`,
-                        background: step.color,
-                        opacity: step.pct === 0 ? 0.25 : 1
-                      }}
-                    />
+              {funnelSteps.map((step, i) => {
+                const stepKey = funnelKeyByIndex[i] || `step_${i}`;
+                const schools = funnelSchoolMap[stepKey] || [];
+                const count = schools.length;
+                const pct = calcPct(count);
+                const isExpanded = expandedFunnelKey === stepKey;
+
+                let conversionRateNode = null;
+                if (i > 0) {
+                  const prevKey = funnelKeyByIndex[i - 1];
+                  const prevCount = (funnelSchoolMap[prevKey] || []).length;
+                  const rate = prevCount > 0 ? Math.round((count / prevCount) * 100) : 0;
+                  conversionRateNode = (
+                    <div className="funnel-conversion">
+                      <span className="funnel-conversion-badge">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
+                        转化率 {rate}%
+                      </span>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div key={stepKey} className={`funnel-item ${isExpanded ? 'expanded' : ''} ${count === 0 ? 'empty-step' : ''}`}>
+                    {conversionRateNode}
+                    <div className="funnel-row" onClick={() => setExpandedFunnelKey(isExpanded ? null : stepKey)} style={{ cursor: 'pointer' }}>
+                      <div className="funnel-label-wrap">
+                        <div className="funnel-label">{step.label}</div>
+                        <div className="funnel-pct">{pct}%</div>
+                      </div>
+                      <div className="funnel-bar-wrap">
+                        <div
+                          className="funnel-bar"
+                          style={{
+                            width: `${pct}%`,
+                            background: step.color
+                          }}
+                        />
+                      </div>
+                      <div className="funnel-right">
+                        <div className="funnel-count">{count}</div>
+                        <span className={`funnel-expand-arrow ${isExpanded ? 'open' : ''}`}>
+                          <ChevronRightIcon size={14} />
+                        </span>
+                      </div>
+                    </div>
+                    {isExpanded && (
+                      <div className="funnel-school-list">
+                        {schools.length > 0 ? (
+                          schools.map((school) => {
+                            const relatedEmail = emails.find(e => e.school === school);
+                            const needsAction = relatedEmail && (relatedEmail.statusType === 'pending' || relatedEmail.statusType === 'wait');
+                            
+                            return (
+                              <span 
+                                key={`${stepKey}-${school}`} 
+                                className={`funnel-school-pill ${needsAction ? 'actionable' : ''}`}
+                                onClick={(e) => {
+                                  if (needsAction && !isParsingEmails) {
+                                    e.stopPropagation();
+                                    handleParseEmail(relatedEmail);
+                                  }
+                                }}
+                                style={{ cursor: needsAction ? 'pointer' : 'default' }}
+                              >
+                                {school}
+                                {needsAction && (
+                                  <span className="funnel-pill-cta" style={{ display: 'inline-flex', alignItems: 'center', marginLeft: '4px', color: 'var(--gold)', fontWeight: 600 }}>
+                                    去处理 <ChevronRightIcon size={10} />
+                                  </span>
+                                )}
+                              </span>
+                            );
+                          })
+                        ) : (
+                          <span className="funnel-empty-tip">暂无院校</span>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  <div className="funnel-count">{step.count}</div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
-            <div className="section-label" style={{ marginTop: '20px' }}>各校状态</div>
-            {emails.map((e, i) => (
+            <div className="section-label" style={{ marginTop: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>各校状态 {expandedFunnelKey ? `· ${funnelSteps[funnelKeyByIndex.indexOf(expandedFunnelKey)].label}` : ''}</span>
+              {expandedFunnelKey && (
+                <button 
+                  onClick={() => setExpandedFunnelKey(null)}
+                  style={{ background: 'none', border: 'none', color: 'var(--gold)', fontSize: '11px', fontWeight: 600, cursor: 'pointer' }}
+                >
+                  清除筛选
+                </button>
+              )}
+            </div>
+            {emails
+              .filter(e => {
+                if (!expandedFunnelKey) return true;
+                const targetSchools = funnelSchoolMap[expandedFunnelKey] || [];
+                return targetSchools.includes(e.school);
+              })
+              .map((e, i) => (
               <div className="school-status-row" key={i}>
                 <div className="school-status-name">{e.school}</div>
                 <div className={`school-status-tag school-tag-${e.statusType}`}>{e.status}</div>
@@ -534,4 +655,3 @@ function InboxPage() {
 }
 
 export default InboxPage;
-

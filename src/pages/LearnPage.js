@@ -400,7 +400,7 @@ function LearnPage() {
               <div className="map-attribution">服务由高德地图提供</div>
             </div>
 
-            <div className="section-label">当前城市</div>
+            <div className="section-label">行程概览</div>
             <div className="city-info-card">
               <div className="city-info-header">
                 <span className="city-info-dot" style={{ background: 'var(--gold)' }} />
@@ -414,18 +414,34 @@ function LearnPage() {
               </div>
             </div>
 
-            <div className="section-label">接下来</div>
-            {[{ city: '上海', tag: '同济', days: '7天后' }, { city: '南京', tag: '东南大学', days: '14天后' }].map(c => (
-              <div className="city-row-item" key={c.city}>
-                <div className="city-row-dot" style={{ background: 'var(--ink-light)', opacity: 0.4 }} />
-                <div className="city-row-info">
-                  <span className="city-row-name">{c.city}</span>
-                  <span className="city-row-tag">{c.tag}</span>
+            <div className="section-label" style={{ marginTop: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>同路人</span>
+              <span style={{ fontSize: '12px', color: 'var(--gold)', cursor: 'pointer' }}>发布拼单</span>
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {[
+                { name: '李同学', tags: ['同济建筑', '寻女室友'], days: '与你同去上海', avatar: '李', type: '拼房' },
+                { name: '王同学', tags: ['东南规划', '一起打车'], days: '与你同去南京', avatar: '王', type: '拼车' },
+              ].map((c, i) => (
+                <div className="social-row-item" key={i} onClick={() => showToast(`已向${c.name}发送打招呼信息`)}>
+                  <div className="social-avatar">{c.avatar}</div>
+                  <div className="social-row-info">
+                    <div className="social-row-header">
+                      <span className="social-row-name">{c.name}</span>
+                      <span className="social-row-type">{c.type}</span>
+                    </div>
+                    <div className="social-row-tags">
+                      {c.tags.map(tag => <span key={tag} className="social-tag">{tag}</span>)}
+                    </div>
+                  </div>
+                  <div className="social-row-right">
+                    <span className="social-row-days">{c.days}</span>
+                    <button className="social-chat-btn">打招呼</button>
+                  </div>
                 </div>
-                <span className="city-row-days">{c.days}</span>
-                <span className="city-row-arrow"><ChevronRightIcon size={14} /></span>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         )}
 

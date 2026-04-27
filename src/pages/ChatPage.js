@@ -1,9 +1,285 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { BackIcon, SendIcon } from '../components/Icons';
-import { RobotOne } from '@icon-park/react';
+import { BackIcon, SendIcon, DownloadIcon, CopyIcon } from '../components/Icons';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+
+const CODE_LANGUAGE_LABELS = {
+  js: 'JavaScript',
+  jsx: 'React JSX',
+  ts: 'TypeScript',
+  tsx: 'React TSX',
+  json: 'JSON',
+  prisma: 'Prisma',
+  sql: 'SQL',
+  bash: 'Bash',
+  sh: 'Shell',
+  http: 'HTTP',
+  html: 'HTML',
+  css: 'CSS',
+  xml: 'XML',
+  yaml: 'YAML',
+  yml: 'YAML',
+  md: 'Markdown',
+  text: 'Text'
+};
+
+const extractTextContent = (value) =>
+  React.Children.toArray(value)
+    .map((child) => {
+      if (typeof child === 'string') return child;
+      if (typeof child === 'number') return String(child);
+      if (React.isValidElement(child)) return extractTextContent(child.props.children);
+      return '';
+    })
+    .join('');
+
+const getLanguageLabel = (language) => {
+  const normalized = String(language || 'text').toLowerCase();
+  return CODE_LANGUAGE_LABELS[normalized] || normalized.toUpperCase();
+};
+
+const TOOL_EVENT_COPY = {
+  get_user_profile: {
+    label: '读取你的资料',
+    start: '正在读取你的个人信息与长期记忆',
+    success: '已完成资料读取',
+    failure: '资料读取失败，已继续尝试回答'
+  },
+  list_interviews: {
+    label: '检查面试安排',
+    start: '正在检查你的面试与夏令营安排',
+    success: '已获取行程安排',
+    failure: '行程读取失败，无法完整检查冲突'
+  },
+  create_interview: {
+    label: '写入面试记录',
+    start: '正在保存新的面试安排',
+    success: '已写入面试记录',
+    failure: '面试记录写入失败'
+  },
+  analyze_schedule_conflicts: {
+    label: '分析行程冲突',
+    start: '正在分析时间、城市与路线冲突',
+    success: '已完成冲突分析',
+    failure: '冲突分析失败，建议稍后重试'
+  },
+  get_weather: {
+    label: '查询天气信息',
+    start: '正在查询目的地天气情况',
+    success: '已获取天气信息',
+    failure: '天气查询失败'
+  },
+  search_hotels: {
+    label: '筛选附近住宿',
+    start: '正在搜索面试地点附近住宿',
+    success: '已获取住宿候选结果',
+    failure: '住宿搜索失败'
+  },
+  web_search: {
+    label: '联网补充信息',
+    start: '正在联网搜索最新信息',
+    success: '已补充最新公开信息',
+    failure: '联网搜索失败'
+  },
+  lark_auth_status: {
+    label: '检查飞书连接状态',
+    start: '正在确认飞书授权状态',
+    success: '已确认飞书连接状态',
+    failure: '飞书状态检查失败'
+  },
+  lark_auth_login: {
+    label: '发起飞书授权',
+    start: '正在发起飞书授权流程',
+    success: '已完成飞书授权发起',
+    failure: '飞书授权发起失败'
+  },
+  lark_docs_fetch: {
+    label: '读取飞书文档',
+    start: '正在读取飞书文档内容',
+    success: '已读取飞书文档',
+    failure: '飞书文档读取失败'
+  },
+  lark_docs_create: {
+    label: '创建飞书文档',
+    start: '正在创建飞书文档',
+    success: '已创建飞书文档',
+    failure: '飞书文档创建失败'
+  },
+  lark_docs_update: {
+    label: '更新飞书文档',
+    start: '正在更新飞书文档内容',
+    success: '已更新飞书文档',
+    failure: '飞书文档更新失败'
+  },
+  lark_calendar_list: {
+    label: '查询飞书日程',
+    start: '正在读取飞书日程安排',
+    success: '已获取飞书日程',
+    failure: '飞书日程读取失败'
+  },
+  lark_calendar_create: {
+    label: '创建飞书日程',
+    start: '正在创建飞书日程',
+    success: '已创建飞书日程',
+    failure: '飞书日程创建失败'
+  },
+  lark_drive_list: {
+    label: '读取飞书云盘',
+    start: '正在读取飞书云盘文件',
+    success: '已获取飞书云盘文件列表',
+    failure: '飞书云盘读取失败'
+  }
+};
+
+const createExecutionStep = ({ key, title, detail, status = 'pending', kind = 'system', toolName = null }) => ({
+  key,
+  title,
+  detail,
+  status,
+  kind,
+  toolName
+});
+
+const cloneExecutionSteps = (steps) => (Array.isArray(steps) ? steps.map((step) => ({ ...step })) : []);
+
+const getToolEventCopy = (toolName) =>
+  TOOL_EVENT_COPY[toolName] || {
+    label: '调用外部能力',
+    start: `正在执行 ${toolName}`,
+    success: `${toolName} 执行完成`,
+    failure: `${toolName} 执行失败`
+  };
+
+const formatExecutionSummary = (steps, isStreaming) => {
+  const total = steps.length;
+  const completed = steps.filter((step) => step.status === 'completed').length;
+  const failed = steps.filter((step) => step.status === 'failed').length;
+  const running = steps.find((step) => step.status === 'in_progress');
+
+  if (running) return `${running.title}中`;
+  if (isStreaming) return '正在组织最终回答';
+  if (failed > 0) return `已完成 ${completed}/${total} 步，${failed} 步未成功`;
+  if (total === 0) return '正在准备回答';
+  return `已完成 ${completed}/${total} 步`;
+};
+
+const finalizeExecutionSteps = (steps, hasContent) => {
+  const nextSteps = cloneExecutionSteps(steps);
+  const understandingStep = nextSteps.find((step) => step.key === 'understand');
+  if (understandingStep && understandingStep.status === 'in_progress') {
+    understandingStep.status = 'completed';
+    understandingStep.detail = '已完成任务理解';
+  }
+
+  const synthesisStep = nextSteps.find((step) => step.key === 'synthesis');
+  if (hasContent) {
+    if (synthesisStep) {
+      synthesisStep.status = 'completed';
+      synthesisStep.detail = '已生成最终回答';
+    } else {
+      nextSteps.push(
+        createExecutionStep({
+          key: 'synthesis',
+          title: '生成回答',
+          detail: '已生成最终回答',
+          status: 'completed'
+        })
+      );
+    }
+  }
+
+  return nextSteps.map((step) =>
+    step.status === 'in_progress'
+      ? {
+          ...step,
+          status: step.kind === 'tool' ? 'completed' : step.status
+        }
+      : step
+  );
+};
+
+function MarkdownCodeBlock({ children }) {
+  const [copied, setCopied] = useState(false);
+  const copyTimerRef = useRef(null);
+  const codeElement = React.Children.toArray(children)[0];
+  const className = codeElement?.props?.className || '';
+  const languageMatch = className.match(/language-([\w-]+)/);
+  const language = languageMatch?.[1] || 'text';
+  const rawCode = extractTextContent(codeElement?.props?.children).replace(/\n$/, '');
+
+  useEffect(() => () => {
+    if (copyTimerRef.current) window.clearTimeout(copyTimerRef.current);
+  }, []);
+
+  const handleCopy = async () => {
+    if (!rawCode) return;
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(rawCode);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = rawCode;
+        textarea.setAttribute('readonly', '');
+        textarea.style.position = 'absolute';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+      }
+
+      setCopied(true);
+      if (copyTimerRef.current) window.clearTimeout(copyTimerRef.current);
+      copyTimerRef.current = window.setTimeout(() => setCopied(false), 1800);
+    } catch (error) {
+      console.error('复制代码失败:', error);
+    }
+  };
+
+  return (
+    <div className="md-code-block">
+      <div className="md-code-toolbar">
+        <span className="md-code-language">{getLanguageLabel(language)}</span>
+        <div className="md-code-actions">
+          <button
+            type="button"
+            className="md-code-icon-btn is-disabled"
+            disabled
+            aria-label="下载代码（暂未开放）"
+            title="下载代码（暂未开放）"
+          >
+            <DownloadIcon size={18} />
+          </button>
+          <button
+            type="button"
+            className={`md-code-icon-btn${copied ? ' is-success' : ''}`}
+            onClick={handleCopy}
+            aria-label={copied ? '已复制代码' : '复制代码'}
+            title={copied ? '已复制代码' : '复制代码'}
+          >
+            <CopyIcon size={18} />
+          </button>
+        </div>
+      </div>
+      <pre>
+        <code className={className}>{codeElement?.props?.children}</code>
+      </pre>
+    </div>
+  );
+}
+
+const VOICE_DEMO_TEXTS = [
+  '帮我查一下同济大学建筑学院 2026 年夏令营通知有没有更新，并附上官网链接。',
+  '请根据我下一场南京的面试安排，给我一份今晚到明早的冲刺清单。',
+  '帮我看看上海明天的天气，再推荐一套适合面试的穿搭。'
+];
+
+const splitVoiceDraft = (text) => {
+  const parts = text.match(/.{1,10}/g);
+  return Array.isArray(parts) && parts.length > 0 ? parts : [text];
+};
 
 function ChatPage() {
   const location = useLocation();
@@ -35,13 +311,17 @@ function ChatPage() {
         }]
   );
   const [inputValue, setInputValue] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
   const [showContextPanel, setShowContextPanel] = useState(!isInterviewMode);
+  const [voiceState, setVoiceState] = useState('idle');
+  const [voiceDraft, setVoiceDraft] = useState('');
   const hasAutoStartedInterviewRef = useRef(false);
 
   const messagesEndRef = useRef(null);
   const inputAreaRef = useRef(null);
+  const textareaRef = useRef(null);
   const headerRef = useRef(null);
+  const voiceTimerRef = useRef([]);
+  const voiceDemoIndexRef = useRef(0);
   const [inputAreaHeight, setInputAreaHeight] = useState(120);
   const [headerHeight, setHeaderHeight] = useState(isInterviewMode ? 76 : 94);
 
@@ -99,6 +379,11 @@ function ChatPage() {
     };
   }, [isInterviewMode, showContextPanel]);
 
+  useEffect(() => () => {
+    voiceTimerRef.current.forEach((timer) => window.clearTimeout(timer));
+    voiceTimerRef.current = [];
+  }, []);
+
   useEffect(() => {
     const fetchUser = async () => {
       const token = localStorage.getItem('manlv_token');
@@ -136,6 +421,21 @@ function ChatPage() {
     { label: '1分钟自介', msg: '请帮我生成一版1分钟自我介绍，突出我的专业优势和项目亮点。' }
   ];
 
+  const clearVoiceSimulation = () => {
+    voiceTimerRef.current.forEach((timer) => window.clearTimeout(timer));
+    voiceTimerRef.current = [];
+  };
+
+  const toggleTimeline = (messageId) => {
+    setMessages((prev) =>
+      prev.map((msg) =>
+        msg.id === messageId
+          ? { ...msg, timelineExpanded: !msg.timelineExpanded }
+          : msg
+      )
+    );
+  };
+
   const buildApiMessages = (text) => {
     const history = messages
       .filter((msg) => (msg.role === 'user' || msg.role === 'ai') && msg.content?.trim())
@@ -155,7 +455,6 @@ function ChatPage() {
       setMessages((prev) => [...prev, { role: 'user', content: text, time: getTime() }]);
     }
     setInputValue('');
-    setIsTyping(true);
 
     try {
       const token = localStorage.getItem('manlv_token');
@@ -168,7 +467,6 @@ function ChatPage() {
             time: getTime()
           }
         ]);
-        setIsTyping(false);
         return;
       }
 
@@ -179,8 +477,15 @@ function ChatPage() {
           id: msgId,
           role: 'ai',
           content: '',
-          thinking: '',
-          usedTools: [],
+          executionSteps: [
+            createExecutionStep({
+              key: 'understand',
+              title: '理解任务',
+              detail: '正在分析你的问题与上下文',
+              status: 'in_progress'
+            })
+          ],
+          timelineExpanded: true,
           time: getTime()
         }
       ]);
@@ -217,47 +522,148 @@ function ChatPage() {
           try {
             const parsed = JSON.parse(raw);
 
-            if (parsed.type === 'thinking') {
-              setIsTyping(false); // 只要开始思考，就关闭基础加载状态
-              const toolLabel =
-                {
-                  get_user_profile: '分析用户资料',
-                  list_interviews: '查询面试安排',
-                  create_interview: '创建面试记录',
-                  analyze_schedule_conflicts: '分析行程冲突',
-                  get_weather: '查询天气',
-                  search_hotels: '搜索周边酒店'
-                }[parsed.tool] || parsed.tool;
-
+            if (parsed.type === 'thinking' || parsed.type === 'tool_start') {
+              const { label, start } = getToolEventCopy(parsed.tool);
               setMessages((prev) =>
-                prev.map((msg) =>
-                  msg.id === msgId ? { ...msg, thinking: toolLabel } : msg
-                )
+                prev.map((msg) => {
+                  if (msg.id !== msgId) return msg;
+
+                  const nextSteps = cloneExecutionSteps(msg.executionSteps);
+                  const understandingStep = nextSteps.find((step) => step.key === 'understand');
+                  if (understandingStep && understandingStep.status === 'in_progress') {
+                    understandingStep.status = 'completed';
+                    understandingStep.detail = '已理解你的问题与当前上下文';
+                  }
+
+                  const hasSameRunningTool = nextSteps.some(
+                    (step) =>
+                      step.kind === 'tool' &&
+                      step.toolName === parsed.tool &&
+                      step.status === 'in_progress'
+                  );
+
+                  if (!hasSameRunningTool) {
+                    nextSteps.push(
+                      createExecutionStep({
+                        key: `tool-${parsed.tool}-${Date.now()}-${nextSteps.length}`,
+                        title: label,
+                        detail: start,
+                        status: 'in_progress',
+                        kind: 'tool',
+                        toolName: parsed.tool
+                      })
+                    );
+                  }
+
+                  return {
+                    ...msg,
+                    executionSteps: nextSteps,
+                    timelineExpanded: true
+                  };
+                })
+              );
+            }
+
+            if (parsed.type === 'tool_result') {
+              const { success, failure } = getToolEventCopy(parsed.tool);
+              setMessages((prev) =>
+                prev.map((msg) => {
+                  if (msg.id !== msgId) return msg;
+
+                  const nextSteps = cloneExecutionSteps(msg.executionSteps);
+                  const targetIndex = [...nextSteps]
+                    .reverse()
+                    .findIndex(
+                      (step) =>
+                        step.kind === 'tool' &&
+                        step.toolName === parsed.tool &&
+                        step.status === 'in_progress'
+                    );
+
+                  if (targetIndex !== -1) {
+                    const realIndex = nextSteps.length - 1 - targetIndex;
+                    nextSteps[realIndex] = {
+                      ...nextSteps[realIndex],
+                      status: parsed.ok ? 'completed' : 'failed',
+                      detail: parsed.ok ? success : failure
+                    };
+                  }
+
+                  return {
+                    ...msg,
+                    executionSteps: nextSteps
+                  };
+                })
               );
             }
 
             if (parsed.type === 'text') {
-              setIsTyping(false);
               setMessages((prev) =>
-                prev.map((msg) =>
-                  msg.id === msgId ? { ...msg, content: msg.content + parsed.content, thinking: '', isStreaming: true } : msg
-                )
+                prev.map((msg) => {
+                  if (msg.id !== msgId) return msg;
+
+                  const nextSteps = cloneExecutionSteps(msg.executionSteps);
+                  const understandingStep = nextSteps.find((step) => step.key === 'understand');
+                  if (understandingStep && understandingStep.status === 'in_progress') {
+                    understandingStep.status = 'completed';
+                    understandingStep.detail = '已理解你的问题与当前上下文';
+                  }
+
+                  const synthesisStep = nextSteps.find((step) => step.key === 'synthesis');
+                  if (synthesisStep) {
+                    synthesisStep.status = 'in_progress';
+                    synthesisStep.detail = '正在整合信息并生成回答';
+                  } else {
+                    nextSteps.push(
+                      createExecutionStep({
+                        key: 'synthesis',
+                        title: '生成回答',
+                        detail: '正在整合信息并生成回答',
+                        status: 'in_progress'
+                      })
+                    );
+                  }
+
+                  return {
+                    ...msg,
+                    content: msg.content + parsed.content,
+                    executionSteps: nextSteps,
+                    isStreaming: true
+                  };
+                })
               );
             }
 
             if (parsed.type === 'done') {
               setMessages((prev) =>
                 prev.map((msg) =>
-                  msg.id === msgId ? { ...msg, usedTools: parsed.usedTools || [], thinking: '', isStreaming: false } : msg
+                  msg.id === msgId
+                    ? {
+                        ...msg,
+                        executionSteps: finalizeExecutionSteps(msg.executionSteps, Boolean(msg.content?.trim())),
+                        isStreaming: false
+                      }
+                    : msg
                 )
               );
             }
 
             if (parsed.type === 'error') {
               setMessages((prev) =>
-                prev.map((msg) =>
-                  msg.id === msgId ? { ...msg, content: `出错了：${parsed.message}`, thinking: '' } : msg
-                )
+                prev.map((msg) => {
+                  if (msg.id !== msgId) return msg;
+                  const nextSteps = cloneExecutionSteps(msg.executionSteps).map((step) =>
+                    step.status === 'in_progress'
+                      ? { ...step, status: 'failed', detail: '执行中断，请稍后重试' }
+                      : step
+                  );
+                  return {
+                    ...msg,
+                    content: `出错了：${parsed.message}`,
+                    executionSteps: nextSteps,
+                    isStreaming: false
+                  };
+                })
               );
             }
           } catch (e) {
@@ -275,14 +681,68 @@ function ChatPage() {
           time: getTime()
         }
       ]);
-    } finally {
-      setIsTyping(false);
     }
   };
 
   const handleSend = async (text = inputValue) => {
     await requestAiReply({ text, appendUser: true });
   };
+
+  const handleVoiceSimulation = () => {
+    if (voiceState !== 'idle') {
+      clearVoiceSimulation();
+      setVoiceState('idle');
+      setVoiceDraft('');
+      return;
+    }
+
+    const transcript = VOICE_DEMO_TEXTS[voiceDemoIndexRef.current % VOICE_DEMO_TEXTS.length];
+    voiceDemoIndexRef.current += 1;
+    const chunks = splitVoiceDraft(transcript);
+
+    setShowContextPanel(false);
+    setVoiceState('listening');
+    setVoiceDraft('正在收听...');
+
+    voiceTimerRef.current.push(window.setTimeout(() => {
+      setVoiceState('recognizing');
+      setVoiceDraft(chunks[0]);
+    }, 900));
+
+    chunks.slice(1).forEach((chunk, index) => {
+      voiceTimerRef.current.push(window.setTimeout(() => {
+        const partialText = chunks.slice(0, index + 2).join('');
+        setVoiceDraft(partialText);
+      }, 1700 + (index * 550)));
+    });
+
+    const finishDelay = 1700 + (Math.max(chunks.length - 1, 0) * 550) + 500;
+    voiceTimerRef.current.push(window.setTimeout(() => {
+      setVoiceState('completed');
+      setVoiceDraft(transcript);
+      setInputValue(transcript);
+      textareaRef.current?.focus();
+    }, finishDelay));
+
+    voiceTimerRef.current.push(window.setTimeout(() => {
+      setVoiceState('idle');
+      setVoiceDraft('');
+      clearVoiceSimulation();
+    }, finishDelay + 1600));
+  };
+
+  const voiceButtonText = {
+    idle: '语音',
+    listening: '录音中',
+    recognizing: '识别中',
+    completed: '已写入'
+  }[voiceState];
+
+  const voiceHintText = {
+    listening: '正在模拟录音，请稍候...',
+    recognizing: '正在将语音转换成文字...',
+    completed: '识别完成，文字已写入输入框'
+  }[voiceState];
 
   useEffect(() => {
     if (!isInterviewMode || hasAutoStartedInterviewRef.current) return;
@@ -350,8 +810,70 @@ function ChatPage() {
                 </div>
               )}
 
-              {/* 合并加载/思考/内容状态 */}
-              {msg.role === 'ai' && !msg.content?.trim() ? (
+              {msg.role === 'ai' && msg.executionSteps?.length > 0 && (
+                <div className={`execution-timeline ${msg.timelineExpanded ? 'expanded' : ''}`}>
+                  <button
+                    type="button"
+                    className="execution-toggle"
+                    onClick={() => toggleTimeline(msg.id)}
+                  >
+                    <div className="execution-toggle-copy">
+                      <span className="execution-toggle-label">执行过程</span>
+                      <span className="execution-toggle-summary">
+                        {formatExecutionSummary(msg.executionSteps, msg.isStreaming)}
+                      </span>
+                    </div>
+                    <span className="execution-toggle-action">
+                      {msg.timelineExpanded ? '收起' : '展开'}
+                    </span>
+                  </button>
+
+                  {msg.timelineExpanded && (
+                    <div className="execution-steps">
+                      {msg.executionSteps.map((step) => (
+                        <div
+                          key={step.key}
+                          className={`execution-step is-${step.status}`}
+                        >
+                          <span className="execution-step-dot" />
+                          <div className="execution-step-body">
+                            <div className="execution-step-title-row">
+                              <span className="execution-step-title">{step.title}</span>
+                              <span className="execution-step-status">
+                                {step.status === 'completed'
+                                  ? '已完成'
+                                  : step.status === 'failed'
+                                    ? '未完成'
+                                    : '进行中'}
+                              </span>
+                            </div>
+                            <div className="execution-step-detail">{step.detail}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {msg.content?.trim() ? (
+                <div className={`msg-bubble ${msg.role === 'user' ? 'user' : ''} ${msg.isStreaming ? 'streaming' : ''}`}>
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      pre: ({ node, children, ...props }) => (
+                        <MarkdownCodeBlock {...props}>{children}</MarkdownCodeBlock>
+                      ),
+                      a: ({ node, ...props }) => (
+                        <a {...props} target="_blank" rel="noopener noreferrer" />
+                      )
+                    }}
+                  >
+                    {msg.content}
+                  </ReactMarkdown>
+                  {msg.isStreaming && <span className="streaming-cursor" />}
+                </div>
+              ) : msg.role === 'ai' && !msg.executionSteps?.length ? (
                 <div className="typing-indicator-pro">
                   <div className="typing-bars">
                     <div className="typing-bar" />
@@ -359,14 +881,7 @@ function ChatPage() {
                     <div className="typing-bar" />
                     <div className="typing-bar" />
                   </div>
-                  <span className="typing-text">
-                    {msg.thinking ? `正在${msg.thinking}...` : 'AI 正在思考...'}
-                  </span>
-                </div>
-              ) : msg.content?.trim() ? (
-                <div className={`msg-bubble ${msg.role === 'user' ? 'user' : ''} ${msg.isStreaming ? 'streaming' : ''}`}>
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
-                  {msg.isStreaming && <span className="streaming-cursor" />}
+                  <span className="typing-text">AI 正在思考...</span>
                 </div>
               ) : null}
 
@@ -376,16 +891,6 @@ function ChatPage() {
                     <button key={i} className="suggest-chip" onClick={() => handleSend(s)}>
                       {s}
                     </button>
-                  ))}
-                </div>
-              )}
-
-              {msg.usedTools && msg.usedTools.length > 0 && (
-                <div className="suggest-chips">
-                  {msg.usedTools.map((tool, i) => (
-                    <span key={`${tool.name}-${i}`} className="suggest-chip">
-                      {tool.ok ? '已调用' : '失败'} · {tool.name}
-                    </span>
                   ))}
                 </div>
               )}
@@ -405,8 +910,12 @@ function ChatPage() {
             <button className="chat-tool-btn" type="button">
               附件
             </button>
-            <button className="chat-tool-btn" type="button">
-              语音
+            <button
+              className={`chat-tool-btn ${voiceState !== 'idle' ? 'active' : ''}`}
+              type="button"
+              onClick={handleVoiceSimulation}
+            >
+              {voiceButtonText}
             </button>
             <button className="chat-tool-btn" type="button" onClick={() => setInputValue('')}>
               清空
@@ -414,8 +923,19 @@ function ChatPage() {
           </div>
         )}
 
+        {!isInterviewMode && voiceState !== 'idle' && (
+          <div className={`voice-sim-panel ${voiceState}`}>
+            <div className="voice-sim-dot" />
+            <div className="voice-sim-body">
+              <div className="voice-sim-title">{voiceHintText}</div>
+              <div className="voice-sim-text">{voiceDraft}</div>
+            </div>
+          </div>
+        )}
+
         <div className="chat-input-row">
           <textarea
+            ref={textareaRef}
             className="chat-input"
             placeholder={isInterviewMode ? '请输入你的面试回答...' : '输入问题，让漫旅 AI 帮你分析...'}
             value={inputValue}

@@ -226,6 +226,21 @@ export const CodeIcon = ({ size = 16 }) => (
   </svg>
 );
 
+export const DownloadIcon = ({ size = 18 }) => (
+  <svg {...iconProps} width={size} height={size}>
+    <path d="M12 3v11" />
+    <polyline points="7 11 12 16 17 11" />
+    <path d="M5 21h14" />
+  </svg>
+);
+
+export const CopyIcon = ({ size = 18 }) => (
+  <svg {...iconProps} width={size} height={size}>
+    <rect x="9" y="9" width="11" height="11" rx="2" />
+    <path d="M15 9V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7a2 2 0 002 2h3" />
+  </svg>
+);
+
 export const HashIcon = ({ size = 14 }) => (
   <svg {...iconProps} width={size} height={size}>
     <line x1="4" y1="9" x2="20" y2="9" />
