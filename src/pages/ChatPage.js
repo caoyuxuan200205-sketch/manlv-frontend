@@ -82,6 +82,12 @@ const TOOL_EVENT_COPY = {
     success: '已补充最新公开信息',
     failure: '联网搜索失败'
   },
+  bazi_reading: {
+    label: '传统文化陪伴分析',
+    start: '正在整理出生信息并准备八字解读',
+    success: '已完成传统文化陪伴分析准备',
+    failure: '传统文化陪伴分析失败'
+  },
   lark_auth_status: {
     label: '检查飞书连接状态',
     start: '正在确认飞书授权状态',
@@ -164,6 +170,56 @@ const formatExecutionSummary = (steps, isStreaming) => {
   return `已完成 ${completed}/${total} 步`;
 };
 
+const buildToolUsageFromSteps = (steps) => {
+  const toolMap = new Map();
+  let sequence = 0;
+
+  (steps || []).forEach((step) => {
+    if (step.kind !== 'tool' || !step.toolName) return;
+
+    sequence += 1;
+    const copy = getToolEventCopy(step.toolName);
+    const existing = toolMap.get(step.toolName) || {
+      toolName: step.toolName,
+      label: copy.label,
+      callCount: 0,
+      completedCount: 0,
+      failedCount: 0,
+      inProgressCount: 0,
+      lastStatus: step.status,
+      lastDetail: step.detail,
+      lastOrder: 0
+    };
+
+    existing.callCount += 1;
+    if (step.status === 'completed') existing.completedCount += 1;
+    if (step.status === 'failed') existing.failedCount += 1;
+    if (step.status === 'in_progress') existing.inProgressCount += 1;
+    existing.lastStatus = step.status;
+    existing.lastDetail = step.detail;
+    existing.lastOrder = sequence;
+
+    toolMap.set(step.toolName, existing);
+  });
+
+  return Array.from(toolMap.values()).sort((a, b) => {
+    if (a.inProgressCount > 0 && b.inProgressCount === 0) return -1;
+    if (a.inProgressCount === 0 && b.inProgressCount > 0) return 1;
+    return b.lastOrder - a.lastOrder;
+  });
+};
+
+const formatToolLedgerSummary = (toolUsage) => {
+  if (!toolUsage.length) return '暂无工具调用';
+
+  const runningCount = toolUsage.filter((item) => item.inProgressCount > 0).length;
+  const leadToolName = toolUsage[0]?.toolName || toolUsage[0]?.label || '工具';
+  const prefix = runningCount > 0 ? '调用中' : '已调用';
+
+  if (toolUsage.length === 1) return `${prefix} · ${leadToolName}`;
+  return `${prefix} · ${leadToolName} 等 ${toolUsage.length} 个工具`;
+};
+
 const finalizeExecutionSteps = (steps, hasContent) => {
   const nextSteps = cloneExecutionSteps(steps);
   const understandingStep = nextSteps.find((step) => step.key === 'understand');
@@ -199,6 +255,79 @@ const finalizeExecutionSteps = (steps, hasContent) => {
   );
 };
 
+const copyTextToClipboard = async (text) => {
+  if (!text) return;
+
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.setAttribute('readonly', '');
+  textarea.style.position = 'absolute';
+  textarea.style.left = '-9999px';
+  document.body.appendChild(textarea);
+  textarea.select();
+  document.execCommand('copy');
+  document.body.removeChild(textarea);
+};
+
+const extractHastText = (node) => {
+  if (!node) return '';
+  if (node.type === 'text') return node.value || '';
+  if (!Array.isArray(node.children)) return '';
+  return node.children.map((child) => extractHastText(child)).join('');
+};
+
+const normalizeCellText = (value) => String(value || '').replace(/\s+/g, ' ').trim();
+
+const extractTableRows = (tableNode) => {
+  if (!tableNode || !Array.isArray(tableNode.children)) return [];
+
+  const sections = tableNode.children.filter(
+    (child) => child?.type === 'element' && ['thead', 'tbody', 'tfoot'].includes(child.tagName)
+  );
+
+  return sections.flatMap((section) =>
+    (section.children || [])
+      .filter((row) => row?.type === 'element' && row.tagName === 'tr')
+      .map((row) =>
+        (row.children || [])
+          .filter((cell) => cell?.type === 'element' && ['th', 'td'].includes(cell.tagName))
+          .map((cell) => normalizeCellText(extractHastText(cell)))
+      )
+      .filter((row) => row.length > 0)
+  );
+};
+
+const toMarkdownTable = (rows) => {
+  if (!Array.isArray(rows) || rows.length === 0) return '';
+
+  const maxColumns = Math.max(...rows.map((row) => row.length), 0);
+  if (!maxColumns) return '';
+
+  const normalizedRows = rows.map((row) =>
+    Array.from({ length: maxColumns }, (_, index) => (row[index] || '').replace(/\|/g, '\\|'))
+  );
+
+  const [headerRow, ...bodyRows] = normalizedRows;
+  const separator = Array.from({ length: maxColumns }, () => '---');
+  const lines = [
+    `| ${headerRow.join(' | ')} |`,
+    `| ${separator.join(' | ')} |`,
+    ...bodyRows.map((row) => `| ${row.join(' | ')} |`)
+  ];
+
+  return lines.join('\n');
+};
+
+const toTsvTable = (rows) =>
+  (Array.isArray(rows) ? rows : [])
+    .map((row) => row.map((cell) => String(cell || '').replace(/\t/g, ' ')).join('\t'))
+    .join('\n');
+
 function MarkdownCodeBlock({ children }) {
   const [copied, setCopied] = useState(false);
   const copyTimerRef = useRef(null);
@@ -216,20 +345,7 @@ function MarkdownCodeBlock({ children }) {
     if (!rawCode) return;
 
     try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(rawCode);
-      } else {
-        const textarea = document.createElement('textarea');
-        textarea.value = rawCode;
-        textarea.setAttribute('readonly', '');
-        textarea.style.position = 'absolute';
-        textarea.style.left = '-9999px';
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textarea);
-      }
-
+      await copyTextToClipboard(rawCode);
       setCopied(true);
       if (copyTimerRef.current) window.clearTimeout(copyTimerRef.current);
       copyTimerRef.current = window.setTimeout(() => setCopied(false), 1800);
@@ -270,11 +386,88 @@ function MarkdownCodeBlock({ children }) {
   );
 }
 
+function MarkdownTableBlock({ node, children }) {
+  const [copied, setCopied] = useState(false);
+  const copyTimerRef = useRef(null);
+  const tableRows = extractTableRows(node);
+
+  useEffect(() => () => {
+    if (copyTimerRef.current) window.clearTimeout(copyTimerRef.current);
+  }, []);
+
+  const handleCopyTable = async () => {
+    if (!tableRows.length) return;
+
+    const markdown = toMarkdownTable(tableRows);
+    const tsv = toTsvTable(tableRows);
+
+    try {
+      if (navigator.clipboard?.write && window.ClipboardItem && markdown && tsv) {
+        const htmlTable = `
+          <table>
+            ${tableRows
+              .map((row, rowIndex) => {
+                const tag = rowIndex === 0 ? 'th' : 'td';
+                return `<tr>${row
+                  .map((cell) => `<${tag}>${String(cell || '')
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')}</${tag}>`)
+                  .join('')}</tr>`;
+              })
+              .join('')}
+          </table>
+        `.trim();
+
+        await navigator.clipboard.write([
+          new window.ClipboardItem({
+            'text/plain': new Blob([tsv], { type: 'text/plain' }),
+            'text/html': new Blob([htmlTable], { type: 'text/html' })
+          })
+        ]);
+      } else {
+        await copyTextToClipboard(tsv || markdown);
+      }
+
+      setCopied(true);
+      if (copyTimerRef.current) window.clearTimeout(copyTimerRef.current);
+      copyTimerRef.current = window.setTimeout(() => setCopied(false), 1800);
+    } catch (error) {
+      console.error('复制表格失败:', error);
+    }
+  };
+
+  return (
+    <div className="md-table-block">
+      <div className="md-table-toolbar">
+        <span className="md-table-label">表格</span>
+        <div className="md-code-actions">
+          <button
+            type="button"
+            className={`md-code-icon-btn${copied ? ' is-success' : ''}`}
+            onClick={handleCopyTable}
+            aria-label={copied ? '已复制表格' : '复制表格'}
+            title={copied ? '已复制表格' : '复制表格'}
+          >
+            <CopyIcon size={18} />
+          </button>
+        </div>
+      </div>
+      <div className="md-table-scroll">
+        <table>{children}</table>
+      </div>
+    </div>
+  );
+}
+
 const VOICE_DEMO_TEXTS = [
   '帮我查一下同济大学建筑学院 2026 年夏令营通知有没有更新，并附上官网链接。',
   '请根据我下一场南京的面试安排，给我一份今晚到明早的冲刺清单。',
   '帮我看看上海明天的天气，再推荐一套适合面试的穿搭。'
 ];
+
+const BAZI_TRIGGER_PROMPT =
+  '我想开启传统文化陪伴模式，请只在这个模式下使用八字分析。请先收集我的公历/农历生日、出生时辰、性别、出生地，以及我最想咨询的方向，并先明确说明这仅供传统文化学习与娱乐参考，不作为现实决策依据。';
 
 const splitVoiceDraft = (text) => {
   const parts = text.match(/.{1,10}/g);
@@ -311,6 +504,7 @@ function ChatPage() {
         }]
   );
   const [inputValue, setInputValue] = useState('');
+  const [isBaziPresetSelected, setIsBaziPresetSelected] = useState(false);
   const [showContextPanel, setShowContextPanel] = useState(!isInterviewMode);
   const [voiceState, setVoiceState] = useState('idle');
   const [voiceDraft, setVoiceDraft] = useState('');
@@ -436,6 +630,16 @@ function ChatPage() {
     );
   };
 
+  const toggleToolLedger = (messageId) => {
+    setMessages((prev) =>
+      prev.map((msg) =>
+        msg.id === messageId
+          ? { ...msg, toolLedgerExpanded: !msg.toolLedgerExpanded }
+          : msg
+      )
+    );
+  };
+
   const buildApiMessages = (text) => {
     const history = messages
       .filter((msg) => (msg.role === 'user' || msg.role === 'ai') && msg.content?.trim())
@@ -455,6 +659,7 @@ function ChatPage() {
       setMessages((prev) => [...prev, { role: 'user', content: text, time: getTime() }]);
     }
     setInputValue('');
+    setIsBaziPresetSelected(false);
 
     try {
       const token = localStorage.getItem('manlv_token');
@@ -477,6 +682,7 @@ function ChatPage() {
           id: msgId,
           role: 'ai',
           content: '',
+          toolLedgerExpanded: false,
           executionSteps: [
             createExecutionStep({
               key: 'understand',
@@ -737,6 +943,7 @@ function ChatPage() {
     recognizing: '识别中',
     completed: '已写入'
   }[voiceState];
+  const isBaziPresetActive = isBaziPresetSelected;
 
   const voiceHintText = {
     listening: '正在模拟录音，请稍候...',
@@ -756,6 +963,20 @@ function ChatPage() {
       text: '面试结束，请根据我们刚才的完整面试过程输出结构化复盘报告，并严格遵守你的复盘报告格式。',
       appendUser: true
     });
+  };
+
+  const handleBaziPresetToggle = () => {
+    if (isBaziPresetActive) {
+      setIsBaziPresetSelected(false);
+      setInputValue('');
+      textareaRef.current?.focus();
+      return;
+    }
+
+    setShowContextPanel(false);
+    setIsBaziPresetSelected(true);
+    setInputValue(BAZI_TRIGGER_PROMPT);
+    textareaRef.current?.focus();
   };
 
   return (
@@ -794,7 +1015,19 @@ function ChatPage() {
       <div className="chat-messages" style={{ paddingTop: `${headerHeight}px`, paddingBottom: `${inputAreaHeight}px` }}>
         {messages.map((msg, index) => (
           <div key={msg.id || index} className={`msg ${msg.role}`}>
-            <div className="msg-content">
+            <div
+              className={`msg-content ${
+                msg.role === 'ai' && msg.executionSteps?.length > 0 && !msg.content?.trim()
+                  ? 'has-pre-response-timeline'
+                  : ''
+              }`}
+            >
+              {(() => {
+                const toolUsage = buildToolUsageFromSteps(msg.executionSteps);
+                const toolLedgerSummary = formatToolLedgerSummary(toolUsage);
+
+                return (
+                  <>
               {msg.role === 'ai' && (
                 <div className="msg-ai-meta">
                   <div className="msg-avatar-mini">
@@ -864,6 +1097,9 @@ function ChatPage() {
                       pre: ({ node, children, ...props }) => (
                         <MarkdownCodeBlock {...props}>{children}</MarkdownCodeBlock>
                       ),
+                      table: ({ node, children }) => (
+                        <MarkdownTableBlock node={node}>{children}</MarkdownTableBlock>
+                      ),
                       a: ({ node, ...props }) => (
                         <a {...props} target="_blank" rel="noopener noreferrer" />
                       )
@@ -895,7 +1131,46 @@ function ChatPage() {
                 </div>
               )}
 
+              {msg.role === 'ai' && toolUsage.length > 0 && (
+                <div className="tool-ledger">
+                  <button
+                    type="button"
+                    className="tool-ledger-toggle"
+                    onClick={() => toggleToolLedger(msg.id)}
+                  >
+                    <div className="tool-ledger-copy">
+                      <span className="tool-ledger-label">工具调用</span>
+                      <span className="tool-ledger-summary">{toolLedgerSummary}</span>
+                    </div>
+                    <span className="tool-ledger-action">
+                      {msg.toolLedgerExpanded ? '收起' : '展开'}
+                    </span>
+                  </button>
+
+                  {msg.toolLedgerExpanded && (
+                    <div className="tool-ledger-list">
+                      {toolUsage.map((item) => (
+                        <div key={item.toolName} className={`tool-ledger-item is-${item.lastStatus}`}>
+                          <span className="tool-ledger-item-name">{item.toolName}</span>
+                          <span className="tool-ledger-item-status">
+                            {item.inProgressCount > 0
+                              ? '进行中'
+                              : item.failedCount > 0
+                                ? '异常'
+                                : '完成'}
+                          </span>
+                          <span className="tool-ledger-item-count">{item.callCount} 次</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="msg-time">{msg.time}</div>
+                  </>
+                );
+              })()}
             </div>
 
           </div>
@@ -911,13 +1186,28 @@ function ChatPage() {
               附件
             </button>
             <button
+              className={`chat-tool-btn ${isBaziPresetActive ? 'active' : ''}`}
+              type="button"
+              onClick={handleBaziPresetToggle}
+              title="显式开启传统文化陪伴模式"
+            >
+              八字陪伴
+            </button>
+            <button
               className={`chat-tool-btn ${voiceState !== 'idle' ? 'active' : ''}`}
               type="button"
               onClick={handleVoiceSimulation}
             >
               {voiceButtonText}
             </button>
-            <button className="chat-tool-btn" type="button" onClick={() => setInputValue('')}>
+            <button
+              className="chat-tool-btn"
+              type="button"
+              onClick={() => {
+                setInputValue('');
+                setIsBaziPresetSelected(false);
+              }}
+            >
               清空
             </button>
           </div>
