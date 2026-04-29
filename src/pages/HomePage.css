@@ -1,0 +1,306 @@
+/* ═══════════════════════════════════════
+   AI HUB — core entry point
+   ═══════════════════════════════════════ */
+
+.ai-hub-section {
+  padding: 36px 20px 28px;
+  animation: slideDown 0.45s ease;
+}
+
+.ai-hub-greeting {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--ink);
+  letter-spacing: 0.3px;
+  margin-bottom: 4px;
+}
+
+.ai-hub-subtitle {
+  font-size: 13px;
+  color: var(--ink-lighter);
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  margin-bottom: 28px;
+}
+
+/* Fake input bar — links to /chat */
+.ai-hub-input-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: rgba(255,255,255,0.75);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1.5px solid rgba(200,146,58,0.22);
+  border-radius: 20px;
+  box-shadow: 0 4px 24px rgba(200,146,58,0.1), 0 1px 0 white inset;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  margin-bottom: 24px;
+}
+
+.ai-hub-input-bar:hover {
+  border-color: rgba(200,146,58,0.4);
+  box-shadow: 0 8px 32px rgba(200,146,58,0.18);
+  transform: translateY(-1px);
+}
+
+.ai-hub-input-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  background: linear-gradient(135deg, var(--gold-pale) 0%, rgba(200,146,58,0.12) 100%);
+  border-radius: 10px;
+  color: var(--gold);
+  flex-shrink: 0;
+}
+
+.ai-hub-placeholder {
+  flex: 1;
+  font-size: 14px;
+  color: var(--ink-lighter);
+  font-weight: 400;
+}
+
+.ai-hub-send {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, var(--gold) 0%, #b8860b 100%);
+  border-radius: 10px;
+  color: white;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(200,146,58,0.3);
+}
+
+/* Prompt chips */
+.ai-hub-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding-bottom: 2px;
+}
+
+.ai-hub-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.ai-hub-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 12px;
+  background: rgba(255,255,255,0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(200,146,58,0.18);
+  border-radius: 20px;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-light);
+  white-space: nowrap;
+  transition: all 0.25s ease;
+  flex-shrink: 0;
+}
+
+.ai-hub-chip:hover {
+  background: rgba(200,146,58,0.12);
+  border-color: rgba(200,146,58,0.35);
+  color: var(--gold);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(200,146,58,0.15);
+}
+
+/* ═══════════════════════════════════════
+   UP NEXT — smart dashboard card
+   ═══════════════════════════════════════ */
+
+.up-next-card {
+  margin: 4px 20px 8px;
+  background: linear-gradient(145deg, rgba(255,255,255,0.82) 0%, rgba(245,240,232,0.65) 100%);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(200,146,58,0.22);
+  border-radius: 22px;
+  padding: 20px 20px 16px;
+  box-shadow: 0 6px 28px rgba(200,146,58,0.12), 0 1px 0 white inset;
+  animation: fadeIn 0.5s ease 0.1s both;
+  position: relative;
+  overflow: hidden;
+}
+
+.up-next-card::before {
+  content: '';
+  position: absolute;
+  top: -60px;
+  right: -60px;
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(200,146,58,0.1) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.up-next-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.up-next-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--gold);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.up-next-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  background: rgba(200,146,58,0.1);
+  border: 1px solid rgba(200,146,58,0.2);
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--gold);
+}
+
+.up-next-school {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: 0.3px;
+  margin-bottom: 2px;
+  line-height: 1.4;
+}
+
+.up-next-date {
+  font-size: 11px;
+  color: var(--ink-lighter);
+  margin-bottom: 16px;
+}
+
+/* Countdown row */
+.up-next-countdown {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.up-next-time-block {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+}
+
+.up-next-num {
+  font-family: 'Space Mono', monospace;
+  font-size: 36px;
+  font-weight: 800;
+  color: var(--gold);
+  line-height: 1;
+  letter-spacing: -2px;
+}
+
+.up-next-unit {
+  font-size: 11px;
+  color: var(--ink-lighter);
+  font-weight: 500;
+}
+
+.up-next-colon {
+  font-family: 'Space Mono', monospace;
+  font-size: 24px;
+  color: var(--gold);
+  opacity: 0.35;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+/* Urgent task row inside Up Next */
+.up-next-task-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: rgba(192,57,43,0.06);
+  border: 1px solid rgba(192,57,43,0.15);
+  border-radius: 12px;
+  margin-bottom: 14px;
+}
+
+.up-next-task-dot {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.up-next-task-text {
+  flex: 1;
+  font-size: 13px;
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.up-next-task-tag {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--red);
+  background: rgba(192,57,43,0.1);
+  padding: 2px 7px;
+  border-radius: 8px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+/* Action buttons */
+.up-next-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.up-next-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 11px 12px;
+  border-radius: 13px;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.25s ease;
+  cursor: pointer;
+  border: none;
+}
+
+/* Additional animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}

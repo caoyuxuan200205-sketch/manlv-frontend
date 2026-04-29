@@ -1,3 +1,21 @@
+/* ─── CSS VARIABLES ─── */
+:root {
+  --paper: #faf7f2;
+  --paper-card: #ffffff;
+  --ink: #2a2420;
+  --ink-light: #6d6257;
+  --ink-lighter: #a69a8d;
+  --gold: #c8923a;
+  --gold-light: #e6c070;
+  --gold-pale: #f5e8c8;
+  --teal: #2a7a6a;
+  --teal-soft: #e6f0ed;
+  --red: #c0392b;
+  --shadow: rgba(26,24,20,0.08);
+  --shadow-glow: rgba(200,146,58,0.12);
+  --transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
 /* ─── MOBILE SHELL ─── */
 .app-shell {
   max-width: 420px;
