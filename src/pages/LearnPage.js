@@ -4,6 +4,7 @@ import BottomNav from '../components/BottomNav';
 import { MapIcon, BookmarkIcon, LocationIcon, SearchIcon, ChevronRightIcon, BotIcon, WarningIcon } from '../components/Icons';
 import AMapLoader from '@amap/amap-jsapi-loader';
 import SpotRecommendationService from '../services/SpotRecommendationService';
+import API_BASE_URL from '../config/api';
 
 
 // 安全密钥和 Key 配置
@@ -85,7 +86,7 @@ function LearnPage() {
 
     try {
       // 1. 获取用户信息
-      const userRes = await fetch('http://localhost:3001/api/user', {
+      const userRes = await fetch(`${API_BASE_URL}/api/user`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (userRes.ok) {
@@ -94,7 +95,7 @@ function LearnPage() {
       }
 
       // 2. 获取面试列表
-      const ivRes = await fetch('http://localhost:3001/api/interviews', {
+      const ivRes = await fetch(`${API_BASE_URL}/api/interviews`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (ivRes.ok) {
@@ -268,7 +269,7 @@ function LearnPage() {
         const formData = new FormData();
         formData.append('file', file);
 
-        const response = await fetch('http://localhost:3001/api/parse-resume', {
+        const response = await fetch(`${API_BASE_URL}/api/parse-resume`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`

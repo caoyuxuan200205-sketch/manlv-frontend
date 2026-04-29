@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 import { CalendarIcon, LocationIcon, BotIcon, WarningIcon } from '../components/Icons';
+import API_BASE_URL from '../config/api';
 
 function HomePage() {
   const [countdown, setCountdown] = useState({ days: 3, hours: 14, mins: 27 });
@@ -28,7 +29,7 @@ function HomePage() {
     const token = localStorage.getItem('manlv_token');
     if (!token) return;
     try {
-      const res = await fetch('http://localhost:3001/api/user', {
+      const res = await fetch(`${API_BASE_URL}/api/user`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) setUser(await res.json());

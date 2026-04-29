@@ -3,6 +3,7 @@ import BottomNav from '../components/BottomNav';
 import { MailIcon, CheckIcon, WarningIcon, ChevronRightIcon, InboxIcon, SendIcon, CloseIcon, BotIcon } from '../components/Icons';
 import EmailParser from '../services/EmailParser';
 import EmailReplyGenerator from '../services/EmailReplyGenerator';
+import API_BASE_URL from '../config/api';
 
 const emailSamples = [
   {
@@ -118,7 +119,7 @@ function InboxPage() {
     const token = localStorage.getItem('manlv_token');
     if (!token) return;
     try {
-      const res = await fetch('http://localhost:3001/api/user', {
+      const res = await fetch(`${API_BASE_URL}/api/user`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) setUser(await res.json());

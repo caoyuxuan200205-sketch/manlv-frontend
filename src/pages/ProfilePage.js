@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 import { ProfileIcon, TrendIcon, StarIcon, SettingsIcon, ChevronRightIcon, BackIcon, CheckIcon } from '../components/Icons';
+import API_BASE_URL from '../config/api';
 
 const emotionData = [
   { day: '周一', val: 45, label: '备考·沉稳', color: '#a4b0be' },
@@ -54,7 +55,7 @@ function ProfilePage({ onLogout }) {
     }
 
     try {
-      const res = await fetch('http://localhost:3001/api/user', {
+      const res = await fetch(`${API_BASE_URL}/api/user`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
@@ -91,7 +92,7 @@ function ProfilePage({ onLogout }) {
     }
 
     try {
-      const res = await fetch('http://localhost:3001/api/user', {
+      const res = await fetch(`${API_BASE_URL}/api/user`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',

@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { BackIcon, SendIcon, DownloadIcon, CopyIcon } from '../components/Icons';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import API_BASE_URL from '../config/api';
 
 const CODE_LANGUAGE_LABELS = {
   js: 'JavaScript',
@@ -477,7 +478,7 @@ const splitVoiceDraft = (text) => {
 function ChatPage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3001';
+  const apiBaseUrl = API_BASE_URL;
 
   const isInterviewMode = location.state?.interviewMode || false;
   const schoolName = location.state?.schoolName;

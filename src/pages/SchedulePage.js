@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 import { CalendarIcon, LocationIcon, ClockIcon, HotelIcon, BotIcon, PlaneIcon, WarningIcon, ChevronRightIcon, CheckIcon, SearchIcon } from '../components/Icons';
+import API_BASE_URL from '../config/api';
 
 function SchedulePage() {
   const [selectedDay, setSelectedDay] = useState(17);
@@ -26,7 +27,7 @@ function SchedulePage() {
     const token = localStorage.getItem('manlv_token');
     if (!token) return;
     try {
-      const res = await fetch('http://localhost:3001/api/user', {
+      const res = await fetch(`${API_BASE_URL}/api/user`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
@@ -46,7 +47,7 @@ function SchedulePage() {
   const fetchInterviews = async () => {
     const token = localStorage.getItem('manlv_token');
     try {
-      const res = await fetch('http://localhost:3001/api/interviews', {
+      const res = await fetch(`${API_BASE_URL}/api/interviews`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
@@ -71,7 +72,7 @@ function SchedulePage() {
     }
 
     try {
-      const res = await fetch('http://localhost:3001/api/interviews', {
+      const res = await fetch(`${API_BASE_URL}/api/interviews`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -101,7 +102,7 @@ function SchedulePage() {
     console.log('[Delete Interview] Attempting to delete ID:', id);
 
     try {
-      const res = await fetch(`http://localhost:3001/api/interviews/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/interviews/${id}`, {
         method: 'DELETE',
         headers: { 
           'Authorization': `Bearer ${token}`,
@@ -132,7 +133,7 @@ function SchedulePage() {
     setIsPlanning(true);
     const token = localStorage.getItem('manlv_token');
     try {
-      const res = await fetch('http://localhost:3001/api/trips/generate', {
+      const res = await fetch(`${API_BASE_URL}/api/trips/generate`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -151,7 +152,7 @@ function SchedulePage() {
   const handleApplyPlan = async (plan) => {
     const token = localStorage.getItem('manlv_token');
     try {
-      const res = await fetch('http://localhost:3001/api/trips/save', {
+      const res = await fetch(`${API_BASE_URL}/api/trips/save`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',

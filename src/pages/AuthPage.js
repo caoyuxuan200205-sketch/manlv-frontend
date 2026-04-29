@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PhoneIcon, LockIcon, EyeIcon, EyeOffIcon, ProfileIcon, HashIcon } from '../components/Icons';
+import API_BASE_URL from '../config/api';
 import { Wechat, TencentQq, Alipay } from '@icon-park/react';
 
 function AuthPage({ onLogin }) {
@@ -97,7 +98,7 @@ function AuthPage({ onLogin }) {
 
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:3001/api/auth/login', {
+      const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: account, password })
@@ -148,7 +149,7 @@ function AuthPage({ onLogin }) {
 
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:3001/api/auth/register', {
+      const res = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: phone, password, name })
@@ -190,7 +191,7 @@ function AuthPage({ onLogin }) {
 
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:3001/api/auth/reset-password', {
+      const res = await fetch(`${API_BASE_URL}/api/auth/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: phone, code, newPassword: password })
