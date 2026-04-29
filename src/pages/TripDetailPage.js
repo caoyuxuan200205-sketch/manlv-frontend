@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { BackIcon, LocationIcon, CalendarIcon, BotIcon, CheckIcon, WarningIcon } from '../components/Icons';
+import '../styles/TripDetailPage.css';
 
 function TripDetailPage() {
   const { school } = useParams();

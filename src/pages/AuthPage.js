@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PhoneIcon, LockIcon, EyeIcon, EyeOffIcon, ProfileIcon, HashIcon } from '../components/Icons';
 import API_BASE_URL from '../config/api';
+import '../styles/AuthPage.css';
 import { Wechat, TencentQq, Alipay } from '@icon-park/react';
 
 function AuthPage({ onLogin }) {

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 import { ProfileIcon, TrendIcon, StarIcon, SettingsIcon, ChevronRightIcon, BackIcon, CheckIcon } from '../components/Icons';
 import API_BASE_URL from '../config/api';
+import '../styles/ProfilePage.css';
 
 const emotionData = [
   { day: '周一', val: 45, label: '备考·沉稳', color: '#a4b0be' },

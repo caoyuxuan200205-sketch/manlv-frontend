@@ -5,6 +5,7 @@ import { MapIcon, BookmarkIcon, LocationIcon, SearchIcon, ChevronRightIcon, BotI
 import AMapLoader from '@amap/amap-jsapi-loader';
 import SpotRecommendationService from '../services/SpotRecommendationService';
 import API_BASE_URL from '../config/api';
+import '../styles/LearnPage.css';
 
 
 // 安全密钥和 Key 配置

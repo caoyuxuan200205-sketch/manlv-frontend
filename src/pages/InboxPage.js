@@ -4,6 +4,7 @@ import { MailIcon, CheckIcon, WarningIcon, ChevronRightIcon, InboxIcon, SendIcon
 import EmailParser from '../services/EmailParser';
 import EmailReplyGenerator from '../services/EmailReplyGenerator';
 import API_BASE_URL from '../config/api';
+import '../styles/InboxPage.css';
 
 const emailSamples = [
   {

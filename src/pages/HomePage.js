@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import './HomePage.css';
+import '../styles/HomePage.css';
 import { Link } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 import { CalendarIcon, LocationIcon, BotIcon, WarningIcon } from '../components/Icons';

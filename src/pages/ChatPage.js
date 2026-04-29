@@ -4,6 +4,7 @@ import { BackIcon, SendIcon, DownloadIcon, CopyIcon } from '../components/Icons'
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import API_BASE_URL from '../config/api';
+import '../styles/ChatPage.css';
 
 const CODE_LANGUAGE_LABELS = {
   js: 'JavaScript',

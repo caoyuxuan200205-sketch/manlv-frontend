@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 import { CalendarIcon, LocationIcon, ClockIcon, HotelIcon, BotIcon, PlaneIcon, WarningIcon, ChevronRightIcon, CheckIcon, SearchIcon } from '../components/Icons';
 import API_BASE_URL from '../config/api';
+import '../styles/SchedulePage.css';
 
 function SchedulePage() {
   const [selectedDay, setSelectedDay] = useState(17);
