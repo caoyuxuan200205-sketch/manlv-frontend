@@ -360,9 +360,12 @@ function AuthPage({ onLogin }) {
         return;
       }
 
+      if (data.token) {
+        localStorage.setItem('manlv_token', data.token);
+      }
       showToast('注册成功！欢迎加入漫旅 🎉');
-      navigate('/home');
       onLogin();
+      navigate('/home');
     } catch (error) {
       console.error(error);
       showToast('网络错误，请稍后重试');
