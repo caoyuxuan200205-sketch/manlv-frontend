@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 import { ProfileIcon, TrendIcon, StarIcon, SettingsIcon, ChevronRightIcon, BackIcon, CheckIcon } from '../components/Icons';
 import API_BASE_URL from '../config/api';
+import majorListData from '../config/major_list.json';
 import '../styles/ProfilePage.css';
 
 const emotionData = [
@@ -22,10 +23,25 @@ const achievements = [
   { title: '论文猎手', desc: '收藏10篇导师论文', unlocked: false },
 ];
 
-const majorList = [
-  '建筑学', '城乡规划', '风景园林', '环境设计', '社会学', 
-  '交互设计', '法学', '汉语言文学', '哲学'
-];
+const undergraduateCategories = majorListData.undergraduate || [];
+
+const findMajorPath = (majorName) => {
+  if (!majorName) return null;
+
+  const matchedCategory = undergraduateCategories.find((item) =>
+    item.majors.includes(majorName)
+  );
+
+  if (matchedCategory) {
+    return {
+      category: matchedCategory.category,
+      major: majorName,
+      majorTypes: matchedCategory.major_type || []
+    };
+  }
+
+  return null;
+};
 
 function ProfilePage({ onLogout }) {
   const [activeTab, setActiveTab] = useState('emotion');
@@ -33,6 +49,11 @@ function ProfilePage({ onLogout }) {
   const [loading, setLoading] = useState(true);
   const [editingField, setEditingField] = useState(null); // 'name', 'email', 'password', 'major', 'notification'
   const [editValue, setEditValue] = useState('');
+  const [majorSelection, setMajorSelection] = useState({
+    category: '',
+    major: ''
+  });
+  const [isMajorPickerOpen, setIsMajorPickerOpen] = useState(false);
   const [toast, setToast] = useState('');
   
   // 模拟通知设置的 state
@@ -47,6 +68,38 @@ function ProfilePage({ onLogout }) {
   useEffect(() => {
     fetchUserData();
   }, []);
+
+  useEffect(() => {
+    if (editingField !== 'major') {
+      setIsMajorPickerOpen(false);
+      return;
+    }
+
+    const matched = findMajorPath(user?.major);
+    if (matched) {
+      setMajorSelection({
+        category: matched.category,
+        major: matched.major
+      });
+      return;
+    }
+
+    setMajorSelection({
+      category: '',
+      major: ''
+    });
+  }, [editingField, user?.major]);
+
+  useEffect(() => {
+    if (!isMajorPickerOpen) return undefined;
+
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [isMajorPickerOpen]);
 
   const fetchUserData = async () => {
     const token = localStorage.getItem('manlv_token');
@@ -121,6 +174,31 @@ function ProfilePage({ onLogout }) {
     navigate('/');
   };
 
+  const openMajorPicker = () => {
+    const fallbackCategory = majorSelection.category || findMajorPath(user?.major)?.category || undergraduateCategories[0]?.category || '';
+
+    setMajorSelection((prev) => ({
+      ...prev,
+      category: prev.category || fallbackCategory
+    }));
+    setIsMajorPickerOpen(true);
+  };
+
+  const handleMajorCategorySelect = (category) => {
+    setMajorSelection({
+      category,
+      major: ''
+    });
+  };
+
+  const handleMajorSelect = (major) => {
+    setMajorSelection((prev) => ({
+      ...prev,
+      major
+    }));
+    setIsMajorPickerOpen(false);
+  };
+
   if (loading) return <div className="page" style={{ justifyContent: 'center', alignItems: 'center' }}>加载中...</div>;
 
   // 编辑模态层
@@ -133,6 +211,12 @@ function ProfilePage({ onLogout }) {
       major: <StarIcon size={18} />,
       notification: <SettingsIcon size={18} />
     };
+    const majorCategories = undergraduateCategories;
+    const selectedMajorCategory = majorCategories.find((item) => item.category === majorSelection.category);
+    const majorTypes = selectedMajorCategory?.major_type || [];
+    const majorOptions = selectedMajorCategory?.majors || [];
+    const majorDisplay = majorSelection.major ? `${majorSelection.category} / ${majorSelection.major}` : '';
+    const canSubmit = editingField === 'major' ? Boolean(majorSelection.major) : Boolean(editValue.trim());
     
     return (
       <div className="page edit-page">
@@ -153,18 +237,19 @@ function ProfilePage({ onLogout }) {
             {editingField === 'major' ? (
               <div className="major-selector">
                 <label className="input-label">请选择你的专业</label>
-                <div className="major-grid">
-                  {majorList.map(m => (
-                    <button 
-                      key={m} 
-                      className={`major-opt-btn ${user?.major === m ? 'selected' : ''}`}
-                      onClick={() => handleUpdateProfile(m)}
-                    >
-                      {m}
-                    </button>
-                  ))}
-                </div>
-                <div className="major-coming-soon">更多专业敬请期待...</div>
+                <button
+                  type="button"
+                  className={`profile-major-trigger ${majorSelection.major ? 'selected' : ''}`}
+                  onClick={openMajorPicker}
+                >
+                  <div className="profile-major-trigger-label">专业方向</div>
+                  <div className="profile-major-trigger-value">
+                    {majorDisplay || '请选择你的专业方向'}
+                  </div>
+                  <div className="profile-major-trigger-meta">
+                    {majorSelection.major ? '点击可重新选择' : '学科门类 / 具体专业'}
+                  </div>
+                </button>
               </div>
             ) : editingField === 'notification' ? (
               <div className="notification-settings" style={{ marginTop: '8px' }}>
@@ -224,16 +309,16 @@ function ProfilePage({ onLogout }) {
             )}
           </div>
 
-          {editingField !== 'major' && editingField !== 'notification' && (
+          {editingField !== 'notification' && (
             <div className="edit-actions">
               <button 
-                className={`save-action-btn ${!editValue.trim() ? 'disabled' : ''}`} 
-                onClick={() => handleUpdateProfile()}
-                disabled={!editValue.trim()}
+                className={`save-action-btn ${!canSubmit ? 'disabled' : ''}`} 
+                onClick={() => handleUpdateProfile(editingField === 'major' ? majorSelection.major : undefined)}
+                disabled={!canSubmit}
               >
                 <div className="btn-content">
                   <CheckIcon size={20} />
-                  <span>确认修改</span>
+                  <span>{editingField === 'major' ? '保存专业' : '确认修改'}</span>
                 </div>
                 <div className="btn-glow"></div>
               </button>
@@ -243,6 +328,84 @@ function ProfilePage({ onLogout }) {
             </div>
           )}
         </div>
+
+        {editingField === 'major' && isMajorPickerOpen && (
+          <div
+            className="major-picker-overlay"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="profile-major-picker-title"
+            onClick={() => setIsMajorPickerOpen(false)}
+          >
+            <div className="major-picker-sheet" onClick={(e) => e.stopPropagation()}>
+              <div className="major-picker-handle" aria-hidden="true" />
+              <div className="major-picker-header">
+                <div>
+                  <div className="major-picker-tag">专业选择</div>
+                  <h3 id="profile-major-picker-title" className="major-picker-title">
+                    设置你的专业
+                  </h3>
+                  <p className="major-picker-subtitle">
+                    左侧选择学科门类，右侧直接选择具体专业
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="major-picker-close-btn"
+                  onClick={() => setIsMajorPickerOpen(false)}
+                  aria-label="关闭专业选择"
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="major-picker-body">
+                <div className="major-picker-layout">
+                  <div className="major-picker-category-list">
+                    {majorCategories.map((option) => (
+                      <button
+                        key={option.category}
+                        type="button"
+                        className={`major-picker-category-btn ${
+                          majorSelection.category === option.category ? 'active' : ''
+                        }`}
+                        onClick={() => handleMajorCategorySelect(option.category)}
+                      >
+                        {option.category}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="major-picker-major-panel">
+                    {majorTypes.length > 0 && (
+                      <div className="major-picker-type-tags">
+                        {majorTypes.map((item) => (
+                          <span key={item} className="major-picker-type-tag">{item}</span>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="major-picker-major-list">
+                      {majorOptions.map((major) => (
+                        <button
+                          key={major}
+                          type="button"
+                          className={`major-picker-major-btn ${
+                            majorSelection.major === major ? 'selected' : ''
+                          }`}
+                          onClick={() => handleMajorSelect(major)}
+                        >
+                          <span>{major}</span>
+                          {majorSelection.major === major && <span>已选</span>}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         {toast && <div className="toast show">{toast}</div>}
       </div>
     );
