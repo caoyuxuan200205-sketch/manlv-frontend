@@ -247,6 +247,14 @@ manlv-backend/
 | `list_interviews` | 查询面试安排列表 |
 | `create_interview` | 创建新面试记录 |
 | `analyze_schedule_conflicts` | 分析行程冲突 |
+| `get_weather` | 查询指定城市的天气信息 |
+| `search_hotels` | 搜索目的地周边酒店 |
+| `web_search` | 联网搜索最新保研资讯与动态 |
+| `bazi_reading` | 传统文化命理排盘与陪伴 |
+| `lark_auth_*` | 飞书 OAuth 账号绑定与状态检查 |
+| `lark_docs_*` | 通过飞书 OpenAPI 搜索/读取/创建文档 |
+| `lark_calendar_*` | 通过飞书 OpenAPI 查询/创建日程安排 |
+| `lark_drive_*` | 通过飞书 OpenAPI 读取云盘文件 |
 
 ---
 
