@@ -337,4 +337,63 @@
   user-select: none;
 }
 
+.oauth-result-page {
+  min-height: 100dvh;
+  justify-content: center;
+  align-items: center;
+  padding: 24px;
+  background: linear-gradient(180deg, var(--paper) 0%, #f6f1e9 100%);
+}
+
+.oauth-result-card {
+  width: 100%;
+  max-width: 320px;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(200,146,58,0.16);
+  border-radius: 24px;
+  padding: 28px 24px;
+  text-align: center;
+  box-shadow: 0 14px 40px rgba(26,24,20,0.08);
+}
+
+.oauth-result-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 16px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.oauth-result-icon.success {
+  background: rgba(42, 122, 106, 0.12);
+  color: var(--teal);
+}
+
+.oauth-result-icon.error {
+  background: rgba(192, 57, 43, 0.1);
+  color: var(--red);
+}
+
+.oauth-result-title {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.oauth-result-text {
+  margin-top: 12px;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--ink-light);
+}
+
+.oauth-result-hint {
+  margin-top: 16px;
+  font-size: 12px;
+  color: var(--ink-lighter);
+}
+
 

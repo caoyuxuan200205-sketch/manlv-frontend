@@ -461,6 +461,93 @@
   color: var(--gold);
 }
 
+.feishu-binding-card {
+  margin-bottom: 12px;
+  padding: 18px;
+  border: 1.5px solid rgba(200,146,58,0.16);
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.92) 0%, rgba(247,241,229,0.86) 100%);
+  box-shadow: 0 8px 24px rgba(26,24,20,0.04);
+}
+
+.feishu-binding-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.feishu-binding-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(61,56,48,0.55);
+  letter-spacing: 0.04em;
+}
+
+.feishu-binding-name {
+  margin-top: 4px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.feishu-binding-badge {
+  flex-shrink: 0;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.feishu-binding-badge.connected {
+  background: rgba(42,122,106,0.12);
+  color: var(--teal);
+}
+
+.feishu-binding-badge.disconnected {
+  background: rgba(192,57,43,0.1);
+  color: var(--red);
+}
+
+.feishu-binding-desc {
+  margin-top: 10px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--ink-lighter);
+}
+
+.feishu-binding-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.feishu-primary-btn,
+.feishu-secondary-btn {
+  border: none;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.feishu-primary-btn {
+  background: linear-gradient(135deg, #293657 0%, #36476f 100%);
+  color: #fff;
+}
+
+.feishu-secondary-btn {
+  background: rgba(200,146,58,0.1);
+  color: #8f6f26;
+}
+
+.feishu-primary-btn:disabled,
+.feishu-secondary-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* ������ EDIT PROFILE PAGE ������ */
 .edit-page {
   background: linear-gradient(180deg, var(--paper) 0%, #f9f6f2 100%);

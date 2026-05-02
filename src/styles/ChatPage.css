@@ -1341,6 +1341,58 @@
   opacity: 1;
 }
 
+.feishu-auth-strip {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(200,146,58,0.16);
+  border-radius: 16px;
+  background: rgba(255,255,255,0.72);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.feishu-auth-copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.feishu-auth-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #6d5a31;
+}
+
+.feishu-auth-desc {
+  margin-top: 3px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: rgba(61,56,48,0.68);
+}
+
+.feishu-auth-btn {
+  flex-shrink: 0;
+  border: none;
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: linear-gradient(135deg, #293657 0%, #36476f 100%);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.feishu-auth-btn.is-connected {
+  background: rgba(200,146,58,0.12);
+  color: #8f6f26;
+  border: 1px solid rgba(200,146,58,0.2);
+}
+
+.feishu-auth-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .chat-messages {
   padding-top: 92px;
   gap: 14px;
@@ -1898,4 +1950,3 @@
 .interview-end-btn:active {
   transform: scale(0.98);
 }
-

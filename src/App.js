@@ -9,11 +9,12 @@ import ChatPage from './pages/ChatPage';
 import LearnPage from './pages/LearnPage';
 import InboxPage from './pages/InboxPage';
 import ProfilePage from './pages/ProfilePage';
+import FeishuOAuthResultPage from './pages/FeishuOAuthResultPage';
 import ScrollToTop from './components/ScrollToTop';
 import { BotIcon, CloseIcon, SendIcon, MinusIcon } from './components/Icons';
 
 function App() {
-  const [isLoggedIn, setIsLoggedIn] = React.useState(false);
+  const [isLoggedIn, setIsLoggedIn] = React.useState(() => Boolean(localStorage.getItem('manlv_token')));
   const [showAssistant, setShowAssistant] = React.useState(false);
   const [assistantMessages, setAssistantMessages] = React.useState([
     {
@@ -33,6 +34,16 @@ function App() {
   React.useEffect(() => {
     scrollToBottom();
   }, [assistantMessages]);
+
+  React.useEffect(() => {
+    const syncLoginState = () => {
+      setIsLoggedIn(Boolean(localStorage.getItem('manlv_token')));
+    };
+
+    syncLoginState();
+    window.addEventListener('storage', syncLoginState);
+    return () => window.removeEventListener('storage', syncLoginState);
+  }, []);
 
   const handleSendMessage = () => {
     if (!inputValue.trim()) return;
@@ -81,6 +92,7 @@ function App() {
       <div className="app-shell">
         <Routes>
           <Route path="/" element={isLoggedIn ? <Navigate to="/home" /> : <AuthPage onLogin={() => setIsLoggedIn(true)} />} />
+          <Route path="/oauth/feishu/result" element={<FeishuOAuthResultPage />} />
           <Route path="/home" element={guard(<HomePage />)} />
           <Route path="/trip" element={guard(<SchedulePage />)} />
           <Route path="/trip/:school" element={guard(<TripDetailPage />)} />

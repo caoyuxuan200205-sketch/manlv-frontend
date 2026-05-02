@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 import { ProfileIcon, TrendIcon, StarIcon, SettingsIcon, ChevronRightIcon, BackIcon, CheckIcon } from '../components/Icons';
 import API_BASE_URL from '../config/api';
 import majorListData from '../config/major_list.json';
+import { getDefaultFeishuRedirectUri, startFeishuAuth, unbindFeishu } from '../services/feishuAuth';
 import '../styles/ProfilePage.css';
 
 const emotionData = [
@@ -44,6 +45,7 @@ const findMajorPath = (majorName) => {
 };
 
 function ProfilePage({ onLogout }) {
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState('emotion');
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -55,6 +57,7 @@ function ProfilePage({ onLogout }) {
   });
   const [isMajorPickerOpen, setIsMajorPickerOpen] = useState(false);
   const [toast, setToast] = useState('');
+  const [feishuActionLoading, setFeishuActionLoading] = useState(false);
   
   // 模拟通知设置的 state
   const [notifSettings, setNotifSettings] = useState({
@@ -65,9 +68,47 @@ function ProfilePage({ onLogout }) {
   
   const navigate = useNavigate();
 
+  const fetchUserData = useCallback(async () => {
+    const token = localStorage.getItem('manlv_token');
+    if (!token) {
+      navigate('/');
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/user`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setUser(data);
+      } else {
+        navigate('/');
+      }
+    } catch (error) {
+      console.error('Fetch user error:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [navigate]);
+
+  const showToast = (msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(''), 2500);
+  };
+
   useEffect(() => {
     fetchUserData();
-  }, []);
+  }, [fetchUserData]);
+
+  useEffect(() => {
+    const result = location.state?.feishuAuthResult;
+    if (!result) return;
+
+    showToast(result.message || (result.status === 'success' ? '飞书授权成功' : '飞书授权未完成'));
+    fetchUserData();
+    navigate(location.pathname, { replace: true, state: null });
+  }, [fetchUserData, location.pathname, location.state, navigate]);
 
   useEffect(() => {
     if (editingField !== 'major') {
@@ -100,35 +141,6 @@ function ProfilePage({ onLogout }) {
       document.body.style.overflow = originalOverflow;
     };
   }, [isMajorPickerOpen]);
-
-  const fetchUserData = async () => {
-    const token = localStorage.getItem('manlv_token');
-    if (!token) {
-      navigate('/');
-      return;
-    }
-
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/user`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setUser(data);
-      } else {
-        navigate('/');
-      }
-    } catch (error) {
-      console.error('Fetch user error:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const showToast = (msg) => {
-    setToast(msg);
-    setTimeout(() => setToast(''), 2500);
-  };
 
   const handleUpdateProfile = async (customValue) => {
     const token = localStorage.getItem('manlv_token');
@@ -172,6 +184,35 @@ function ProfilePage({ onLogout }) {
     localStorage.removeItem('manlv_token');
     if (onLogout) onLogout();
     navigate('/');
+  };
+
+  const handleConnectFeishu = async () => {
+    setFeishuActionLoading(true);
+    try {
+      const redirectUri = getDefaultFeishuRedirectUri('profile', '/profile');
+      const payload = await startFeishuAuth({ redirectUri });
+      window.location.href = payload.authorizeUrl;
+    } catch (error) {
+      showToast(error.message || '飞书授权暂时不可用');
+    } finally {
+      setFeishuActionLoading(false);
+    }
+  };
+
+  const handleUnbindFeishu = async () => {
+    setFeishuActionLoading(true);
+    try {
+      const result = await unbindFeishu();
+      setUser((prev) => ({
+        ...prev,
+        feishu: result.feishu
+      }));
+      showToast(result.message || '飞书账号已解除绑定');
+    } catch (error) {
+      showToast(error.message || '解除飞书绑定失败');
+    } finally {
+      setFeishuActionLoading(false);
+    }
   };
 
   const openMajorPicker = () => {
@@ -411,8 +452,6 @@ function ProfilePage({ onLogout }) {
     );
   }
 
-  const maxVal = Math.max(...emotionData.map(d => d.val));
-
   const settingsItems = [
     { label: '修改姓名', note: user?.name, field: 'name' },
     { label: '专业方向', note: user?.major || '未设置', field: 'major' },
@@ -420,6 +459,14 @@ function ProfilePage({ onLogout }) {
     { label: '修改密码', note: '********', field: 'password' },
     { label: '通知提醒', note: (notifSettings.email || notifSettings.schedule || notifSettings.system) ? '已开启' : '已关闭', field: 'notification' },
   ];
+
+  const feishuConnected = Boolean(user?.feishu?.connected);
+  const feishuDisplayName = user?.feishu?.profile?.name || user?.feishu?.profile?.email || '未绑定';
+  const feishuStatusText = !user?.feishu?.configured
+    ? '服务端暂未完成飞书 OAuth 配置'
+    : feishuConnected
+      ? (user?.feishu?.needsReauth ? '授权已过期，请重新连接' : '当前漫旅账号已连接飞书')
+      : '连接后可直接读取飞书文档、日程和云盘文件';
 
   return (
     <div className="page">
@@ -512,6 +559,42 @@ function ProfilePage({ onLogout }) {
 
         {activeTab === 'settings' && (
           <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '1px' }}>
+            <div className="feishu-binding-card">
+              <div className="feishu-binding-top">
+                <div>
+                  <div className="feishu-binding-label">飞书连接</div>
+                  <div className="feishu-binding-name">{feishuConnected ? feishuDisplayName : '未连接飞书'}</div>
+                </div>
+                <div className={`feishu-binding-badge ${feishuConnected ? 'connected' : 'disconnected'}`}>
+                  {feishuConnected ? '已连接' : '未连接'}
+                </div>
+              </div>
+              <div className="feishu-binding-desc">{feishuStatusText}</div>
+              <div className="feishu-binding-actions">
+                <button
+                  type="button"
+                  className="feishu-primary-btn"
+                  onClick={handleConnectFeishu}
+                  disabled={feishuActionLoading}
+                >
+                  {feishuActionLoading
+                    ? '处理中...'
+                    : feishuConnected
+                      ? '重新授权'
+                      : '连接飞书'}
+                </button>
+                {feishuConnected && (
+                  <button
+                    type="button"
+                    className="feishu-secondary-btn"
+                    onClick={handleUnbindFeishu}
+                    disabled={feishuActionLoading}
+                  >
+                    解除绑定
+                  </button>
+                )}
+              </div>
+            </div>
             {settingsItems.map((item, i) => (
               <div 
                 className="settings-row" 

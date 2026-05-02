@@ -1,9 +1,16 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { BackIcon, SendIcon, DownloadIcon, CopyIcon } from '../components/Icons';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import API_BASE_URL from '../config/api';
+import {
+  consumePendingFeishuChatIntent,
+  fetchFeishuStatus,
+  getDefaultFeishuRedirectUri,
+  savePendingFeishuChatIntent,
+  startFeishuAuth
+} from '../services/feishuAuth';
 import '../styles/ChatPage.css';
 
 const CODE_LANGUAGE_LABELS = {
@@ -510,7 +517,11 @@ function ChatPage() {
   const [showContextPanel, setShowContextPanel] = useState(!isInterviewMode);
   const [voiceState, setVoiceState] = useState('idle');
   const [voiceDraft, setVoiceDraft] = useState('');
+  const [feishuStatus, setFeishuStatus] = useState(null);
+  const [pageToast, setPageToast] = useState('');
+  const [feishuActionLoading, setFeishuActionLoading] = useState(false);
   const hasAutoStartedInterviewRef = useRef(false);
+  const handledFeishuResultRef = useRef('');
 
   const messagesEndRef = useRef(null);
   const inputAreaRef = useRef(null);
@@ -522,6 +533,10 @@ function ChatPage() {
   const [headerHeight, setHeaderHeight] = useState(isInterviewMode ? 76 : 94);
 
   const hasUserMessage = messages.some((msg) => msg.role === 'user');
+  const latestUserMessageText = useMemo(
+    () => [...messages].reverse().find((msg) => msg.role === 'user' && msg.content?.trim())?.content?.trim() || '',
+    [messages]
+  );
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -592,6 +607,7 @@ function ChatPage() {
         if (!res.ok) return;
         const user = await res.json();
         if (user?.name) setUserName(user.name);
+        if (user?.feishu) setFeishuStatus(user.feishu);
       } catch (e) {
         console.error(e);
       }
@@ -599,16 +615,43 @@ function ChatPage() {
     fetchUser();
   }, [apiBaseUrl]);
 
-  const getTime = () => new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
-  const userAvatarText = (userName || '我').trim().slice(0, 1);
-  const interviewContext = {
-    school_name: schoolName || '',
-    major_name: majorName || '',
-    interview_city: interviewCity || '',
-    interview_type: interviewType || '',
-    difficulty,
-    resume_content: resumeContent || ''
+  const handleConnectFeishu = async () => {
+    setFeishuActionLoading(true);
+    try {
+      const redirectUri = getDefaultFeishuRedirectUri('chat', '/chat');
+      const draftText = inputValue.trim();
+      const pendingText = draftText || latestUserMessageText;
+      if (pendingText) {
+        savePendingFeishuChatIntent({
+          text: pendingText,
+          appendUser: Boolean(draftText)
+        });
+      }
+      const payload = await startFeishuAuth({ redirectUri });
+      window.location.href = payload.authorizeUrl;
+    } catch (error) {
+      showPageToast(error.message || '飞书授权暂时不可用');
+    } finally {
+      setFeishuActionLoading(false);
+    }
   };
+
+  const getTime = useCallback(
+    () => new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+    []
+  );
+  const userAvatarText = (userName || '我').trim().slice(0, 1);
+  const interviewContext = useMemo(
+    () => ({
+      school_name: schoolName || '',
+      major_name: majorName || '',
+      interview_city: interviewCity || '',
+      interview_type: interviewType || '',
+      difficulty,
+      resume_content: resumeContent || ''
+    }),
+    [difficulty, interviewCity, interviewType, majorName, resumeContent, schoolName]
+  );
 
   const contextChips = [
     { label: '冲突检查', msg: '请先检查我的面试安排是否冲突，再给出按优先级排序的处理建议。' },
@@ -621,6 +664,25 @@ function ChatPage() {
     voiceTimerRef.current.forEach((timer) => window.clearTimeout(timer));
     voiceTimerRef.current = [];
   };
+
+  const showPageToast = useCallback((message) => {
+    if (!message) return;
+    setPageToast(message);
+    window.setTimeout(() => setPageToast(''), 2600);
+  }, []);
+
+  const refreshFeishuStatus = useCallback(async ({ silent = false } = {}) => {
+    try {
+      const latestStatus = await fetchFeishuStatus();
+      setFeishuStatus(latestStatus);
+      return latestStatus;
+    } catch (error) {
+      if (!silent) {
+        showPageToast(error.message || '获取飞书状态失败');
+      }
+      return null;
+    }
+  }, [showPageToast]);
 
   const toggleTimeline = (messageId) => {
     setMessages((prev) =>
@@ -642,7 +704,7 @@ function ChatPage() {
     );
   };
 
-  const buildApiMessages = (text) => {
+  const buildApiMessages = useCallback((text) => {
     const history = messages
       .filter((msg) => (msg.role === 'user' || msg.role === 'ai') && msg.content?.trim())
       .map((msg) => ({
@@ -651,9 +713,9 @@ function ChatPage() {
       }));
 
     return [...history, { role: 'user', content: text }];
-  };
+  }, [messages]);
 
-  const requestAiReply = async ({ text, appendUser = true }) => {
+  const requestAiReply = useCallback(async ({ text, appendUser = true }) => {
     if (!text.trim()) return;
 
     if (!isInterviewMode) setShowContextPanel(false);
@@ -890,7 +952,7 @@ function ChatPage() {
         }
       ]);
     }
-  };
+  }, [apiBaseUrl, buildApiMessages, getTime, interviewContext, isInterviewMode]);
 
   const handleSend = async (text = inputValue) => {
     await requestAiReply({ text, appendUser: true });
@@ -954,10 +1016,45 @@ function ChatPage() {
   }[voiceState];
 
   useEffect(() => {
+    const result = location.state?.feishuAuthResult;
+    if (!result) return;
+
+    const signature = `${result.status}:${result.message || ''}`;
+    if (handledFeishuResultRef.current === signature) return;
+    handledFeishuResultRef.current = signature;
+
+    showPageToast(result.message || (result.status === 'success' ? '飞书授权成功' : '飞书授权未完成'));
+    refreshFeishuStatus({ silent: result.status !== 'success' });
+    const pendingIntent = consumePendingFeishuChatIntent();
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: 'ai',
+        content: result.status === 'success'
+          ? '飞书已连接成功。接下来你可以继续让我读取飞书文档、查看日程或整理云盘文件。'
+          : `飞书授权未完成：${result.message || '请稍后重试或重新发起授权。'}`,
+        time: getTime()
+      }
+    ]);
+
+    navigate(location.pathname, { replace: true, state: null });
+
+    if (result.status === 'success' && pendingIntent?.text) {
+      window.setTimeout(() => {
+        requestAiReply({
+          text: pendingIntent.text,
+          appendUser: pendingIntent.appendUser
+        });
+      }, 180);
+    }
+  }, [getTime, location.pathname, location.state, navigate, refreshFeishuStatus, requestAiReply, showPageToast]);
+
+  useEffect(() => {
     if (!isInterviewMode || hasAutoStartedInterviewRef.current) return;
     hasAutoStartedInterviewRef.current = true;
     requestAiReply({ text: '开始面试', appendUser: false });
-  }, [isInterviewMode]);
+  }, [isInterviewMode, requestAiReply]);
 
   const handleFinishInterview = async () => {
     if (!isInterviewMode) return;
@@ -1010,6 +1107,35 @@ function ChatPage() {
                 {chip.label}
               </button>
             ))}
+          </div>
+        )}
+
+        {!isInterviewMode && (
+          <div className="feishu-auth-strip">
+            <div className="feishu-auth-copy">
+              <div className="feishu-auth-title">
+                {feishuStatus?.connected ? '飞书已连接' : '连接飞书后可直接读文档和查日程'}
+              </div>
+              <div className="feishu-auth-desc">
+                {feishuStatus?.connected
+                  ? (feishuStatus?.profile?.name
+                    ? `当前已绑定：${feishuStatus.profile.name}`
+                    : '当前漫旅账号已绑定飞书')
+                  : '授权完成后会自动返回当前页面'}
+              </div>
+            </div>
+            <button
+              type="button"
+              className={`feishu-auth-btn ${feishuStatus?.connected ? 'is-connected' : ''}`}
+              onClick={feishuStatus?.connected ? () => refreshFeishuStatus() : handleConnectFeishu}
+              disabled={feishuActionLoading}
+            >
+              {feishuActionLoading
+                ? '跳转中...'
+                : feishuStatus?.connected
+                  ? '刷新状态'
+                  : '连接飞书'}
+            </button>
           </div>
         )}
       </div>
@@ -1102,8 +1228,8 @@ function ChatPage() {
                       table: ({ node, children }) => (
                         <MarkdownTableBlock node={node}>{children}</MarkdownTableBlock>
                       ),
-                      a: ({ node, ...props }) => (
-                        <a {...props} target="_blank" rel="noopener noreferrer" />
+                      a: ({ node, children, ...props }) => (
+                        <a {...props} target="_blank" rel="noopener noreferrer">{children}</a>
                       )
                     }}
                   >
@@ -1253,6 +1379,7 @@ function ChatPage() {
           </div>
         )}
       </div>
+      {pageToast && <div className="toast show">{pageToast}</div>}
     </div>
   );
 }
