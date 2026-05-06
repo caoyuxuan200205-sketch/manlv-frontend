@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 import { CalendarIcon, LocationIcon, BotIcon, WarningIcon } from '../components/Icons';
 import API_BASE_URL from '../config/api';
+import { getDynamicData } from '../config/sampleData';
 
 function HomePage() {
   const [countdown, setCountdown] = useState({ days: 3, hours: 14, mins: 27 });
@@ -51,20 +52,10 @@ function HomePage() {
     return `晚安，${name}`;
   };
 
-  const tasks = [
-    { label: '购买北京高铁票', done: false, urgent: true },
-    { label: '准备自我介绍稿', done: false, urgent: false },
-    { label: '确认清华报到要求', done: true, urgent: false },
-    { label: '打印成绩单备份', done: false, urgent: false },
-  ];
-
+  const dynamicData = getDynamicData(user?.major);
+  const tasks = dynamicData.tasks;
+  const trips = dynamicData.trips;
   const urgentTask = tasks.find(t => t.urgent && !t.done);
-
-  const trips = [
-    { id: 1, school: '清华大学 建筑学院', city: '北京', date: '7月18–22日', type: 'camp', status: 'upcoming', progress: 65, daysLeft: 3, conflict: true },
-    { id: 2, school: '同济大学 建筑与城规学院', city: '上海', date: '7月20日', type: 'interview', status: 'confirmed', progress: 40, conflict: true },
-    { id: 3, school: '东南大学 建筑学院', city: '南京', date: '7月25–28日', type: 'camp', status: 'pending', progress: 15 },
-  ];
 
   const nextTrip = trips.find(t => t.daysLeft);
 

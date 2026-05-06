@@ -42,6 +42,8 @@ const schoolLogos = {
   '东南大学': '/logos/southeast-university.jpeg',
   '清华大学': '/logos/tsinghua-university.png',
   '南京大学': '/logos/nanjing-university.jpeg',
+  '同济大学': '/logos/tongji-university.png',
+  '北京大学': '/logos/peking-university.png',
 };
 
 function LearnPage() {
