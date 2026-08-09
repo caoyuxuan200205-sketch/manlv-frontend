@@ -301,3 +301,30 @@ export const HeartPulseIcon = ({ size = 16 }) => (
     <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0016.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 002 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
   </svg>
 );
+
+export const SparklesIcon = ({ size = 15, className = "" }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+  >
+    <path d="M12 2L14.4 9.6L22 12L14.4 14.4L12 22L9.6 14.4L2 12L9.6 9.6L12 2Z" opacity="0.9" />
+    <path d="M19 1L20.2 4.8L24 6L20.2 7.2L19 11L17.8 7.2L14 6L17.8 4.8L19 1Z" opacity="0.65" />
+  </svg>
+);
+
+export const ZapIcon = ({ size = 13, className = "" }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+  >
+    <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" />
+  </svg>
+);

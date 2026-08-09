@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { BackIcon, SendIcon, DownloadIcon, CopyIcon } from '../components/Icons';
+import { BackIcon, SendIcon, DownloadIcon, CopyIcon, SparklesIcon, ZapIcon } from '../components/Icons';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import API_BASE_URL from '../config/api';
@@ -47,6 +47,59 @@ const getLanguageLabel = (language) => {
   const normalized = String(language || 'text').toLowerCase();
   return CODE_LANGUAGE_LABELS[normalized] || normalized.toUpperCase();
 };
+
+function AiThinkingTimer({
+  startTime,
+  isGenerating,
+  duration,
+  className = '',
+  showLabel = true,
+  prefixLabel = '已耗时'
+}) {
+  const [elapsed, setElapsed] = useState(() => {
+    if (typeof duration === 'number') return duration;
+    if (startTime) return Math.max(0, (Date.now() - startTime) / 1000);
+    return 0;
+  });
+
+  useEffect(() => {
+    if (!isGenerating || typeof duration === 'number' || !startTime) {
+      if (typeof duration === 'number') setElapsed(duration);
+      return;
+    }
+
+    const updateTimer = () => {
+      const sec = Math.max(0, (Date.now() - startTime) / 1000);
+      setElapsed(sec);
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 100);
+    return () => clearInterval(interval);
+  }, [startTime, isGenerating, duration]);
+
+  const totalSeconds = Math.round(elapsed);
+  const formatted =
+    totalSeconds < 60
+      ? `${totalSeconds}s`
+      : `${Math.floor(totalSeconds / 60)}分${totalSeconds % 60}秒`;
+
+  return (
+    <span className={`ai-thinking-timer ${isGenerating ? 'is-active' : 'is-finished'} ${className}`}>
+      {isGenerating ? (
+        <span className="timer-pulse-dot" />
+      ) : (
+        <ZapIcon size={12} className="timer-icon-svg" />
+      )}
+      {showLabel && (
+        <span className="timer-label">
+          {isGenerating ? (prefixLabel || '已运行') : '耗时'}
+        </span>
+      )}
+      <span className="timer-val">{formatted}</span>
+    </span>
+  );
+}
 
 const TOOL_EVENT_COPY = {
   get_user_profile: {
@@ -561,6 +614,10 @@ function ChatPage() {
     () => [...messages].reverse().find((msg) => msg.role === 'user' && msg.content?.trim())?.content?.trim() || '',
     [messages]
   );
+  const activeAiMessage = useMemo(
+    () => [...messages].reverse().find((msg) => msg.role === 'ai' && (msg.isGenerating || msg.isStreaming)),
+    [messages]
+  );
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -664,7 +721,7 @@ function ChatPage() {
     () => new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
     []
   );
-  const userAvatarText = (userName || '我').trim().slice(0, 1);
+
   const interviewContext = useMemo(
     () => ({
       school_name: schoolName || '',
@@ -764,12 +821,15 @@ function ChatPage() {
       }
 
       const msgId = `ai_${Date.now()}`;
+      const nowTimestamp = Date.now();
       setMessages((prev) => [
         ...prev,
         {
           id: msgId,
           role: 'ai',
           content: '',
+          startTime: nowTimestamp,
+          isGenerating: true,
           toolLedgerExpanded: false,
           executionSteps: [
             createExecutionStep({
@@ -930,15 +990,20 @@ function ChatPage() {
 
             if (parsed.type === 'done') {
               setMessages((prev) =>
-                prev.map((msg) =>
-                  msg.id === msgId
-                    ? {
-                        ...msg,
-                        executionSteps: finalizeExecutionSteps(msg.executionSteps, Boolean(msg.content?.trim())),
-                        isStreaming: false
-                      }
-                    : msg
-                )
+                prev.map((msg) => {
+                  if (msg.id !== msgId) return msg;
+                  const endTime = Date.now();
+                  const startTime = msg.startTime || nowTimestamp;
+                  const duration = Math.max(0.1, (endTime - startTime) / 1000);
+                  return {
+                    ...msg,
+                    executionSteps: finalizeExecutionSteps(msg.executionSteps, Boolean(msg.content?.trim())),
+                    isStreaming: false,
+                    isGenerating: false,
+                    endTime,
+                    duration
+                  };
+                })
               );
             }
 
@@ -946,6 +1011,9 @@ function ChatPage() {
               setMessages((prev) =>
                 prev.map((msg) => {
                   if (msg.id !== msgId) return msg;
+                  const endTime = Date.now();
+                  const startTime = msg.startTime || nowTimestamp;
+                  const duration = Math.max(0.1, (endTime - startTime) / 1000);
                   const nextSteps = cloneExecutionSteps(msg.executionSteps).map((step) =>
                     step.status === 'in_progress'
                       ? { ...step, status: 'failed', detail: '执行中断，请稍后重试' }
@@ -955,7 +1023,10 @@ function ChatPage() {
                     ...msg,
                     content: `出错了：${parsed.message}`,
                     executionSteps: nextSteps,
-                    isStreaming: false
+                    isStreaming: false,
+                    isGenerating: false,
+                    endTime,
+                    duration
                   };
                 })
               );
@@ -1109,13 +1180,27 @@ function ChatPage() {
           <button className="back-btn" onClick={() => navigate(-1)}>
             <BackIcon size={18} />
           </button>
-          <div className={`ai-avatar ${isInterviewMode ? 'minimal' : ''}`}>
+          <div className={`ai-avatar ${isInterviewMode ? 'minimal' : ''} ${activeAiMessage ? 'thinking' : ''}`}>
             <img src="/ai-avatar-monkey.png" alt="漫旅 AI" className="ai-avatar-img" />
             <div className="ai-status-dot" />
+            {activeAiMessage && <div className="ai-avatar-aura" />}
           </div>
           <div className="ai-info">
             <div className="ai-name">{isInterviewMode ? `${schoolName || ''} ${majorName || ''}`.trim() : '漫旅 AI'}</div>
-            <div className="ai-desc">{isInterviewMode ? '模拟面试模式' : '你的保研智能助手'}</div>
+            <div className="ai-desc">
+              {activeAiMessage ? (
+                <AiThinkingTimer
+                  startTime={activeAiMessage.startTime}
+                  isGenerating={true}
+                  prefixLabel="深度思考中"
+                  className="header-timer"
+                />
+              ) : isInterviewMode ? (
+                '模拟面试模式'
+              ) : (
+                '你的保研智能助手'
+              )}
+            </div>
           </div>
           {!isInterviewMode && (
             <button className="chat-chip-toggle" onClick={() => setShowContextPanel((v) => !v)}>
@@ -1188,12 +1273,7 @@ function ChatPage() {
                   <span className="msg-ai-name">{isInterviewMode ? 'Interview AI' : 'ManLv AI'}</span>
                 </div>
               )}
-              {msg.role === 'user' && (
-                <div className="msg-user-meta">
-                  <span className="msg-user-name">你</span>
-                  <div className="msg-avatar-mini user">{userAvatarText}</div>
-                </div>
-              )}
+
 
               {msg.role === 'ai' && msg.executionSteps?.length > 0 && (
                 <div className={`execution-timeline ${msg.timelineExpanded ? 'expanded' : ''}`}>
@@ -1202,15 +1282,34 @@ function ChatPage() {
                     className="execution-toggle"
                     onClick={() => toggleTimeline(msg.id)}
                   >
-                    <div className="execution-toggle-copy">
-                      <span className="execution-toggle-label">执行过程</span>
+                    <div className="execution-toggle-left">
+                      <span className="execution-toggle-icon">
+                        {msg.isGenerating || msg.isStreaming ? (
+                          <span className="execution-spark-active" />
+                        ) : (
+                          <SparklesIcon size={14} className="execution-spark-svg" />
+                        )}
+                      </span>
+                      <span className="execution-toggle-label">深度思考</span>
+                      <span className="execution-toggle-dot">•</span>
                       <span className="execution-toggle-summary">
                         {formatExecutionSummary(msg.executionSteps, msg.isStreaming)}
                       </span>
                     </div>
-                    <span className="execution-toggle-action">
-                      {msg.timelineExpanded ? '收起' : '展开'}
-                    </span>
+                    <div className="execution-toggle-right">
+                      <AiThinkingTimer
+                        startTime={msg.startTime}
+                        isGenerating={msg.isGenerating || msg.isStreaming}
+                        duration={msg.duration}
+                        className="execution-timer-badge"
+                        showLabel={true}
+                      />
+                      <span className={`execution-chevron ${msg.timelineExpanded ? 'is-expanded' : ''}`}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                      </span>
+                    </div>
                   </button>
 
                   {msg.timelineExpanded && (
@@ -1270,6 +1369,12 @@ function ChatPage() {
                     <div className="typing-bar" />
                   </div>
                   <span className="typing-text">AI 正在思考...</span>
+                  <AiThinkingTimer
+                    startTime={msg.startTime}
+                    isGenerating={true}
+                    prefixLabel="思考"
+                    className="typing-timer"
+                  />
                 </div>
               ) : null}
 
@@ -1319,7 +1424,18 @@ function ChatPage() {
                 </div>
               )}
 
-              <div className="msg-time">{msg.time}</div>
+              <div className="msg-time-row">
+                <span className="msg-time">{msg.time}</span>
+                {msg.role === 'ai' && (msg.duration || msg.isGenerating || msg.isStreaming) && (
+                  <AiThinkingTimer
+                    startTime={msg.startTime}
+                    isGenerating={msg.isGenerating || msg.isStreaming}
+                    duration={msg.duration}
+                    className="msg-duration-tag"
+                    showLabel={true}
+                  />
+                )}
+              </div>
                   </>
                 );
               })()}
