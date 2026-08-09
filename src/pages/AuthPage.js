@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PhoneIcon, LockIcon, EyeIcon, EyeOffIcon, ProfileIcon, HashIcon } from '../components/Icons';
+import { PhoneIcon, LockIcon, EyeIcon, EyeOffIcon, ProfileIcon, HashIcon, SchoolIcon, ChevronRightIcon } from '../components/Icons';
 import API_BASE_URL from '../config/api';
 import majorListData from '../config/major_list.json';
 import '../styles/AuthPage.css';
@@ -324,14 +324,13 @@ function AuthPage({ onLogin }) {
   const handleRegister = async (e) => {
     e.preventDefault();
     const phone = e.target.elements.phone.value;
-    const code = e.target.elements.code.value;
     const name = e.target.elements.name.value;
     const major = registerMajorSelection.major;
     const password = e.target.elements.password.value;
     const confirm = e.target.elements['password-confirm'].value;
     const agree = e.target.elements['agree-terms'].checked;
 
-    if (!phone || !code || !name || !major || !password || !confirm) {
+    if (!phone || !name || !major || !password || !confirm) {
       showToast('请填写完整的注册信息');
       return;
     }
@@ -641,39 +640,6 @@ function AuthPage({ onLogin }) {
               </div>
 
               <div className="input-group">
-                <label className="input-label">验证码</label>
-                <div className="verification-code">
-                  <div className="input-wrapper" style={{ flex: 1 }}>
-                    <span className="input-icon" style={{ left: '16px' }}><HashIcon size={16} /></span>
-                    <input 
-                      type="text" 
-                      className={`auth-input ${registerCode.length === 6 ? 'input-valid' : ''}`}
-                      name="code"
-                      placeholder="请输入验证码" 
-                      style={{ paddingLeft: '48px' }}
-                      maxLength="6" 
-                      required 
-                      value={registerCode}
-                      onChange={e => setRegisterCode(e.target.value)}
-                    />
-                  </div>
-                  <button 
-                    type="button" 
-                    className="send-code-btn" 
-                    disabled={countdown > 0}
-                    onClick={() => sendVerificationCode('register')}
-                  >
-                    {countdown > 0 ? `${countdown}s` : '获取验证码'}
-                  </button>
-                </div>
-                {registerCode && registerCode.length !== 6 && (
-                  <div className="input-hint hint-error">
-                    请输入6位验证码
-                  </div>
-                )}
-              </div>
-
-              <div className="input-group">
                 <label className="input-label">姓名</label>
                 <div className="input-wrapper">
                   <span className="input-icon" style={{ left: '16px' }}><ProfileIcon size={16} /></span>
@@ -697,26 +663,21 @@ function AuthPage({ onLogin }) {
 
               <div className="input-group">
                 <label className="input-label">专业</label>
-                <div className="auth-major-selection">
-                  <button
-                    type="button"
-                    className={`auth-major-trigger ${registerMajorSelection.major ? 'selected' : ''}`}
-                    onClick={openRegisterMajorPicker}
-                  >
-                    <div className="auth-major-trigger-label">专业方向</div>
-                    <div className="auth-major-trigger-value">
-                      {registerMajorDisplay || '请选择你的专业方向'}
-                    </div>
-                    <div className="auth-major-trigger-meta">
-                      {registerMajorSelection.major ? '点击可重新选择' : '学科门类 / 具体专业'}
-                    </div>
-                  </button>
+                <div className="input-wrapper" onClick={openRegisterMajorPicker} style={{ cursor: 'pointer' }}>
+                  <span className="input-icon" style={{ left: '16px' }}><SchoolIcon size={16} /></span>
+                  <input 
+                    type="text" 
+                    className={`auth-input ${registerMajorSelection.major ? 'input-valid' : ''}`}
+                    readOnly
+                    placeholder="请选择你的专业方向" 
+                    value={registerMajorDisplay}
+                    style={{ paddingLeft: '48px', paddingRight: '40px', cursor: 'pointer' }}
+                    required
+                  />
+                  <span className="input-icon" style={{ right: '16px', left: 'auto', pointerEvents: 'none', color: 'var(--ink-lighter)' }}>
+                    <ChevronRightIcon size={16} />
+                  </span>
                 </div>
-                {!registerMajorSelection.major && (
-                  <div className="input-hint">
-                    选择专业后，系统会立即生成更匹配的面试与漫学内容
-                  </div>
-                )}
               </div>
 
               <div className="input-group">

@@ -1217,7 +1217,111 @@
   align-items: center;
 }
 
-/* 原邮件展开面板 */
+/* 原邮件独立弹窗 (Raw Email Modal) */
+.raw-email-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(8px);
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.raw-email-modal-card {
+  background: #fdfaf5;
+  border: 1.5px solid rgba(200, 146, 58, 0.25);
+  border-radius: 20px;
+  width: 100%;
+  max-width: 600px;
+  max-height: 82vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.35);
+  animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+.raw-email-modal-header {
+  padding: 16px 20px;
+  background: #f8f4ec;
+  border-bottom: 1px solid rgba(200, 146, 58, 0.2);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.raw-email-modal-title {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.raw-modal-title-icon {
+  font-size: 18px;
+}
+
+.raw-email-modal-close {
+  background: transparent;
+  border: none;
+  font-size: 24px;
+  color: #78716c;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.raw-email-modal-close:hover {
+  color: #1c1917;
+}
+
+.raw-email-modal-body {
+  padding: 16px 20px;
+  overflow-y: auto;
+  flex: 1;
+  background: #fdfaf5;
+}
+
+.raw-email-modal-footer {
+  padding: 12px 20px;
+  background: #f8f4ec;
+  border-top: 1px solid rgba(200, 146, 58, 0.2);
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.raw-modal-btn-copy {
+  background: rgba(200, 146, 58, 0.12);
+  border: 1px solid rgba(200, 146, 58, 0.3);
+  color: var(--gold);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.raw-modal-btn-close {
+  background: linear-gradient(135deg, #2a7a6a, #1f5c50);
+  border: none;
+  color: #ffffff;
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
 /* ─── REPLY LOADING ANIMATION ─── */
 .reply-loading-card {
   margin-top: 16px;

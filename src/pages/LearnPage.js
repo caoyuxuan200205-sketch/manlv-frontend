@@ -83,6 +83,12 @@ function LearnPage() {
     }
   }, []);
 
+  useEffect(() => {
+    if (activeSection === 'interview') {
+      fetchInitialData();
+    }
+  }, [activeSection]);
+
   const fetchInitialData = async () => {
     const token = localStorage.getItem('manlv_token');
     if (!token) return;

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import '../styles/HomePage.css';
 import { Link } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
-import { CalendarIcon, LocationIcon, BotIcon, WarningIcon } from '../components/Icons';
+import { CalendarIcon, LocationIcon, BotIcon, WarningIcon, TargetIcon, CalendarRangeIcon, SchoolIcon, HeartPulseIcon, MapIcon, MailIcon } from '../components/Icons';
 import API_BASE_URL from '../config/api';
 import { getDynamicData } from '../config/sampleData';
 
@@ -12,8 +12,15 @@ function HomePage() {
   const [toast, setToast] = useState('');
   const [user, setUser] = useState(null);
 
+  const [interviews, setInterviews] = useState([]);
+
+  const [emailAccounts, setEmailAccounts] = useState([]);
+  const [isSyncingEmail, setIsSyncingEmail] = useState(false);
+
   useEffect(() => {
     fetchUserData();
+    fetchInterviews();
+    fetchEmailAccounts();
     // Tick countdown every minute
     const timer = setInterval(() => {
       setCountdown(prev => {
@@ -26,6 +33,62 @@ function HomePage() {
     }, 60000);
     return () => clearInterval(timer);
   }, []);
+
+  const fetchEmailAccounts = async () => {
+    const token = localStorage.getItem('manlv_token');
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/email-accounts`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) setEmailAccounts(await res.json());
+    } catch (e) {
+      console.error('Fetch email accounts error:', e);
+    }
+  };
+
+  const handleQuickEmailSync = async () => {
+    const token = localStorage.getItem('manlv_token');
+    if (!token) return;
+    setIsSyncingEmail(true);
+    showToast('正在抓取邮箱最新通知...');
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/emails/sync`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        showToast(data.message || '邮件数据已抓取并同步到行程！');
+        fetchInterviews();
+      } else {
+        showToast('抓取失败，请检查邮箱连接');
+      }
+    } catch (e) {
+      showToast('网络请求错误');
+    } finally {
+      setIsSyncingEmail(false);
+    }
+  };
+
+  const fetchInterviews = async () => {
+    const token = localStorage.getItem('manlv_token');
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/interviews`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setInterviews(data);
+      }
+    } catch (e) {
+      console.error('Fetch interviews error:', e);
+    }
+  };
 
   const fetchUserData = async () => {
     const token = localStorage.getItem('manlv_token');
@@ -54,10 +117,25 @@ function HomePage() {
 
   const dynamicData = getDynamicData(user?.major);
   const tasks = dynamicData.tasks;
-  const trips = dynamicData.trips;
-  const urgentTask = tasks.find(t => t.urgent && !t.done);
 
-  const nextTrip = trips.find(t => t.daysLeft);
+  // 优先从数据库提取由邮件解析自动同步及手动创建的真实行程
+  const dbTrips = interviews.map(iv => {
+    const d = new Date(iv.date);
+    const dateStr = `${d.getMonth() + 1}月${d.getDate()}日`;
+    return {
+      id: iv.id,
+      school: `${iv.school} ${iv.major || ''}`.trim(),
+      city: iv.city || '线上活动',
+      date: dateStr,
+      type: iv.type === '夏令营' ? 'camp' : iv.type === '预推免' ? 'promotion' : 'interview',
+      progress: 85,
+      conflict: false
+    };
+  });
+
+  const trips = dbTrips.length > 0 ? dbTrips : dynamicData.trips;
+  const urgentTask = tasks.find(t => t.urgent && !t.done);
+  const nextTrip = trips.find(t => t.daysLeft) || trips[0];
 
   const emotions = [
     { imageSrc: '/emotion-anxious-monkey.png', fallbackEmoji: '😰', label: '焦虑' },
@@ -68,10 +146,10 @@ function HomePage() {
   ];
 
   const aiChips = [
-    { icon: '🎯', text: '面试准备', prefill: '保研面试有哪些常见问题？如何准备？' },
-    { icon: '📅', text: '行程规划', prefill: '我应该如何制定暑期行程计划？' },
-    { icon: '🏫', text: '院校分析', prefill: '不同高校对保研生有什么差异？' },
-    { icon: '💆', text: '情绪疏导', prefill: '我现在压力很大，怎样调整心态？' },
+    { icon: <TargetIcon size={14} />, text: '面试准备', prefill: '保研面试有哪些常见问题？如何准备？' },
+    { icon: <CalendarRangeIcon size={14} />, text: '行程规划', prefill: '我应该如何制定暑期行程计划？' },
+    { icon: <SchoolIcon size={14} />, text: '院校分析', prefill: '不同高校对保研生有什么差异？' },
+    { icon: <HeartPulseIcon size={14} />, text: '情绪疏导', prefill: '我现在压力很大，怎样调整心态？' },
   ];
 
   const showToast = (msg) => {
@@ -79,7 +157,7 @@ function HomePage() {
     setTimeout(() => setToast(''), 2800);
   };
 
-  const selectEmotion = (emotion) => {
+  const selectEmotion = async (emotion) => {
     setSelectedEmotion(emotion);
     const responses = {
       '焦虑': '已记录 · 漫旅帮你一起扛！',
@@ -89,6 +167,21 @@ function HomePage() {
       '期待': '很好 · 带着期待出发！'
     };
     showToast(responses[emotion] || '已记录');
+
+    const token = localStorage.getItem('manlv_token');
+    if (!token) return;
+    try {
+      await fetch(`${API_BASE_URL}/api/emotions/log`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ emotion, source: 'manual', note: '首页打卡' })
+      });
+    } catch (e) {
+      console.error('Save emotion log error:', e);
+    }
   };
 
   return (
@@ -154,6 +247,84 @@ function HomePage() {
           </div>
         </div>
 
+        {/* ── 核心引擎卡片：邮箱保研雷达（第一步） ── */}
+        <div className="email-radar-core-card">
+          <div className="radar-card-header">
+            <div className="radar-title-wrap">
+              <span className="radar-live-dot" />
+              <span className="radar-card-title">保研引擎 · 邮箱雷达</span>
+              <span className="radar-step-tag">第 1 步</span>
+            </div>
+            {emailAccounts.length > 0 && (
+              <span className="radar-account-badge">{emailAccounts[0].email}</span>
+            )}
+          </div>
+
+          <div className="radar-card-body">
+            {emailAccounts.length === 0 ? (
+              <div className="radar-unbound-state">
+                <div className="radar-unbound-desc">
+                  绑定 QQ 邮箱 / 163 邮箱，开启自动抓取夏令营入营通知与 AI 提取
+                </div>
+                <Link to="/inbox" className="radar-bind-action-btn" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', textAlign: 'center', textDecoration: 'none' }}>
+                  <MailIcon size={14} /> 前往收件箱绑定邮箱 (第1步)
+                </Link>
+              </div>
+            ) : (
+              <div className="radar-bound-state">
+                <div className="radar-bound-info">
+                  已连接收件箱 · 自动监测全国高校推免/夏令营邮件
+                </div>
+                <div className="radar-bound-actions">
+                  <Link to="/inbox" className="radar-view-inbox-btn">
+                    进入收件箱 ({interviews.length} 封日程)
+                  </Link>
+                  <button 
+                    className="radar-sync-now-btn"
+                    onClick={handleQuickEmailSync}
+                    disabled={isSyncingEmail}
+                  >
+                    {isSyncingEmail ? '抓取中...' : '抓取最新通知'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ── 5段式保研全旅程罗盘 ── */}
+        <div className="journey-stepper-card">
+          <div className="stepper-card-title" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <MapIcon size={14} /> 保研全旅程指引
+          </div>
+          <div className="journey-stepper-steps">
+            <Link to="/inbox" className="journey-step-item active">
+              <div className="step-num">1</div>
+              <div className="step-label">邮箱接入</div>
+            </Link>
+            <div className="step-arrow">➔</div>
+            <Link to="/trip" className="journey-step-item">
+              <div className="step-num">2</div>
+              <div className="step-label">行程排班</div>
+            </Link>
+            <div className="step-arrow">➔</div>
+            <Link to="/learn" className="journey-step-item">
+              <div className="step-num">3</div>
+              <div className="step-label">AI面试</div>
+            </Link>
+            <div className="step-arrow">➔</div>
+            <Link to="/trip" className="journey-step-item">
+              <div className="step-num">4</div>
+              <div className="step-label">订票路线</div>
+            </Link>
+            <div className="step-arrow">➔</div>
+            <Link to="/learn" className="journey-step-item">
+              <div className="step-num">5</div>
+              <div className="step-label">到站游学</div>
+            </Link>
+          </div>
+        </div>
+
         {/* ── Up Next 聚合卡片 ── */}
         {nextTrip && (
           <div className="up-next-card">
@@ -206,23 +377,7 @@ function HomePage() {
           </div>
         )}
 
-        {/* ── 今日待办 ── */}
-        <div className="section-title-modern">
-          <span className="section-icon">✅</span>
-          今日待办
-          <span className="section-badge">{tasks.filter(t => !t.done).length} 项</span>
-        </div>
-        <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {tasks.map((task, i) => (
-            <div className={`task-item ${task.done ? 'task-done' : ''} ${task.urgent && !task.done ? 'task-urgent' : ''}`} key={i}>
-              <div className={`task-check ${task.done ? 'checked' : ''}`}>
-                {task.done && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>}
-              </div>
-              <span className="task-label">{task.label}</span>
-              {task.urgent && !task.done && <span className="task-urgency"><WarningIcon size={12} /></span>}
-            </div>
-          ))}
-        </div>
+
 
         {/* ── 今日状态 ── */}
         <div className="section-title-modern">

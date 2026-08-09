@@ -92,6 +92,26 @@ function ProfilePage({ onLogout }) {
     }
   }, [navigate]);
 
+  const [realEmotionDays, setRealEmotionDays] = useState([]);
+
+  const fetchEmotions = useCallback(async () => {
+    const token = localStorage.getItem('manlv_token');
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/emotions/7days`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.days)) {
+          setRealEmotionDays(data.days);
+        }
+      }
+    } catch (e) {
+      console.error('Fetch 7days emotion error:', e);
+    }
+  }, []);
+
   const showToast = (msg) => {
     setToast(msg);
     setTimeout(() => setToast(''), 2500);
@@ -99,7 +119,8 @@ function ProfilePage({ onLogout }) {
 
   useEffect(() => {
     fetchUserData();
-  }, [fetchUserData]);
+    fetchEmotions();
+  }, [fetchUserData, fetchEmotions]);
 
   useEffect(() => {
     const result = location.state?.feishuAuthResult;
@@ -509,33 +530,81 @@ function ProfilePage({ onLogout }) {
       <div className="scroll-area">
         {activeTab === 'emotion' && (
           <div style={{ padding: '16px 20px' }}>
-            <div className="section-label"><TrendIcon size={13} /> 近7天情绪</div>
-            <div className="emotion-chart">
-              {emotionData.map((d, i) => (
-                <div className="emotion-bar-col" key={i}>
-                  <div className="emotion-bar-wrap">
-                    <div
-                      className="emotion-bar-fill"
-                      style={{ 
-                        height: `${(d.val / 100) * 100}%`,
-                        background: d.color || 'var(--gold)'
-                      }}
-                    />
-                  </div>
-                  <div className="emotion-bar-day">{d.day}</div>
-                </div>
-              ))}
+            <div className="section-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span><TrendIcon size={13} /> 近7天情绪分析</span>
+              <span style={{ fontSize: '11px', color: 'var(--gold)', fontWeight: 500 }}>
+                双源整合：首页打卡 + AI对话感知
+              </span>
             </div>
-            <div className="emotion-legend">
-              {emotionData.map((d, i) => (
-                <div className="emotion-legend-item" key={i}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: d.color }} />
-                    <span className="emotion-legend-day">{d.day}</span>
+            <div className="emotion-chart">
+              {(realEmotionDays.length > 0 ? realEmotionDays : emotionData).map((d, i) => {
+                const scoreVal = d.score || d.val || 60;
+                const dayName = d.dayLabel || d.day;
+                const itemColor = d.color || '#c8923a';
+                const itemGradient = d.gradient || itemColor;
+                return (
+                  <div className="emotion-bar-col" key={i}>
+                    <div className="emotion-bar-wrap">
+                      <div
+                        className="emotion-bar-fill"
+                        style={{ 
+                          height: `${(scoreVal / 100) * 100}%`,
+                          background: itemGradient
+                        }}
+                      />
+                    </div>
+                    <div className="emotion-bar-day">{dayName}</div>
                   </div>
-                  <span className="emotion-legend-val" style={{ color: d.color }}>{d.label}</span>
-                </div>
-              ))}
+                );
+              })}
+            </div>
+            {/* 极简情绪总结与 AI 心态解读卡片 */}
+            <div className="emotion-summary-card" style={{
+              marginTop: '16px',
+              padding: '14px 16px',
+              background: 'rgba(255, 255, 255, 0.85)',
+              backdropFilter: 'blur(12px)',
+              borderRadius: '16px',
+              border: '1px solid rgba(200, 146, 58, 0.2)',
+              boxShadow: '0 4px 16px rgba(200, 146, 58, 0.06)'
+            }}>
+              {(() => {
+                const emotionList = realEmotionDays.length > 0 ? realEmotionDays : [];
+                const todayLog = emotionList.find(d => d.dayLabel === '今天') || emotionList[emotionList.length - 1];
+                const currentEmotion = todayLog?.emotion || '充实';
+                const sourceText = todayLog?.isReal 
+                  ? (todayLog.source === 'ai' ? '✨ AI隐式感知' : '👆 首页手动打卡')
+                  : '💡 默认预设数据';
+
+                const insightMap = {
+                  '充实': '状态极佳！保持稳健节奏，有序推进夏令营复习与行程规划。',
+                  '焦虑': '面对高强度保研难免焦虑，做个深呼吸，漫旅陪你一起踏实越过难关！',
+                  '平静': '心态平稳是备考的最佳武器，维持当前节律按部就班即可。',
+                  '疲惫': '连续连考奔波辛苦了，今晚建议适当减压早点休息，蓄力满电。',
+                  '期待': '满怀期待前行，你的每一份辛勤付出都在为梦校铺路！',
+                  '沉稳': '从容不迫，保持战略定力，沉着应对接下来的面试交锋。',
+                  '狂喜': '入营捷报连连！沉淀喜悦后继续保持高质量答辩表现。',
+                  '反思': '及时复盘总结是拉开差距的关键，每一次反思都在让你变得更强。'
+                };
+
+                return (
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--ink)' }}>
+                          今天状态：<span style={{ color: todayLog?.color || 'var(--gold)' }}>{currentEmotion}</span>
+                        </span>
+                      </div>
+                      <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '10px', background: 'rgba(200, 146, 58, 0.12)', color: 'var(--gold)', fontWeight: 600 }}>
+                        {sourceText}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '12px', color: 'var(--ink-light)', lineHeight: '1.5' }}>
+                      {insightMap[currentEmotion] || '记录每天的情绪波幅，漫旅 AI 随时为你提供心态疏导与考前陪伴。'}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         )}

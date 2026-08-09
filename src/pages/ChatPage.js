@@ -62,10 +62,34 @@ const TOOL_EVENT_COPY = {
     failure: '行程读取失败，无法完整检查冲突'
   },
   create_interview: {
-    label: '写入面试记录',
-    start: '正在保存新的面试安排',
-    success: '已写入面试记录',
-    failure: '面试记录写入失败'
+    label: '添加行程安排',
+    start: '正在将高校面试/夏令营添加到你的行程表',
+    success: '已成功把行程写入数据库并同步至日历',
+    failure: '行程添加失败'
+  },
+  delete_interview: {
+    label: '删除/取消行程',
+    start: '正在删除指定的行程记录',
+    success: '已成功删除行程记录',
+    failure: '行程删除失败'
+  },
+  sync_user_emails: {
+    label: '抓取并解析邮件',
+    start: '正在从绑定的邮箱提取最新保研通知',
+    success: '已同步邮件并结构化落库行程',
+    failure: '邮箱同步抓取失败'
+  },
+  send_reply_email: {
+    label: '真实代发邮件',
+    start: '正在使用你的邮箱发送真实回复给招生办',
+    success: '邮件已成功真实发送',
+    failure: '邮件发送失败'
+  },
+  generate_trip_plan: {
+    label: '智能路线与开销规划',
+    start: '正在为你计算跨城连考的最优路线与花费预算',
+    success: '已完成智能行程规划计算',
+    failure: '规划计算失败'
   },
   analyze_schedule_conflicts: {
     label: '分析行程冲突',

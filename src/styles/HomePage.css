@@ -98,25 +98,30 @@
 .ai-hub-chip {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 7px 12px;
-  background: rgba(255,255,255,0.65);
+  gap: 6px;
+  padding: 8px 14px;
+  background: rgba(255,255,255,0.85);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(200,146,58,0.18);
+  border: 1px solid rgba(200,146,58,0.22);
   border-radius: 20px;
   text-decoration: none;
   font-size: 12px;
   font-weight: 600;
-  color: var(--ink-light);
+  color: var(--ink);
   white-space: nowrap;
   transition: all 0.25s ease;
   flex-shrink: 0;
 }
 
+.ai-hub-chip svg {
+  color: var(--gold);
+  flex-shrink: 0;
+}
+
 .ai-hub-chip:hover {
-  background: rgba(200,146,58,0.12);
-  border-color: rgba(200,146,58,0.35);
+  background: linear-gradient(135deg, rgba(200,146,58,0.15) 0%, rgba(200,146,58,0.05) 100%);
+  border-color: rgba(200,146,58,0.45);
   color: var(--gold);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(200,146,58,0.15);
@@ -298,6 +303,206 @@
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* ═══════════════════════════════════════
+   USER JOURNEY MAP — Core Radar & Stepper
+   ═══════════════════════════════════════ */
+
+.email-radar-core-card {
+  margin: 12px 20px;
+  padding: 16px 18px;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border-radius: 18px;
+  border: 1px solid rgba(200, 146, 58, 0.35);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.25);
+  color: #ffffff;
+  animation: fadeIn 0.4s ease;
+}
+
+.radar-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.radar-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.radar-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+  animation: pulse 1.5s infinite;
+}
+
+.radar-card-title {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.radar-step-tag {
+  font-size: 10px;
+  font-weight: 700;
+  color: #c8923a;
+  background: rgba(200, 146, 58, 0.2);
+  padding: 2px 6px;
+  border-radius: 6px;
+  letter-spacing: 0.5px;
+}
+
+.radar-account-badge {
+  font-size: 11px;
+  color: #94a3b8;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 3px 8px;
+  border-radius: 10px;
+}
+
+.radar-unbound-desc {
+  font-size: 12px;
+  color: #cbd5e1;
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.radar-bind-action-btn {
+  width: 100%;
+  padding: 10px;
+  background: linear-gradient(135deg, #c8923a 0%, #b8860b 100%);
+  border: none;
+  border-radius: 12px;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(200, 146, 58, 0.4);
+  transition: transform 0.2s ease;
+}
+
+.radar-bind-action-btn:hover {
+  transform: translateY(-1px);
+}
+
+.radar-bound-info {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-bottom: 12px;
+}
+
+.radar-bound-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.radar-view-inbox-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  color: #f8fafc;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.radar-sync-now-btn {
+  flex: 1;
+  padding: 8px 12px;
+  background: linear-gradient(135deg, #c8923a 0%, #b8860b 100%);
+  border: none;
+  border-radius: 10px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* ── 5-Stage Journey Stepper ── */
+.journey-stepper-card {
+  margin: 12px 20px;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  border-radius: 16px;
+  border: 1px solid rgba(200, 146, 58, 0.2);
+  box-shadow: 0 4px 16px rgba(200, 146, 58, 0.08);
+}
+
+.stepper-card-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 10px;
+  letter-spacing: 0.5px;
+}
+
+.journey-stepper-steps {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.journey-step-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-decoration: none;
+  transition: transform 0.2s ease;
+}
+
+.journey-step-item:hover {
+  transform: translateY(-2px);
+}
+
+.step-num {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  border: 1.5px solid #cbd5e1;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.journey-step-item.active .step-num {
+  background: linear-gradient(135deg, #c8923a 0%, #b8860b 100%);
+  border-color: #c8923a;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(200, 146, 58, 0.35);
+}
+
+.step-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.journey-step-item.active .step-label {
+  color: #1e293b;
+  font-weight: 700;
+}
+
+.step-arrow {
+  font-size: 10px;
+  color: #cbd5e1;
 }
 
 @keyframes slideDown {

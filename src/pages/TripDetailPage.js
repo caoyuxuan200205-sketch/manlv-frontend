@@ -1,15 +1,80 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { BackIcon, LocationIcon, CalendarIcon, BotIcon, CheckIcon, WarningIcon } from '../components/Icons';
 import { getTripDetailData } from '../config/sampleData';
+import API_BASE_URL from '../config/api';
 import '../styles/TripDetailPage.css';
+
+function generateAlignedTimeline(startDateStr, endDateStr, schoolName, cityName) {
+  const match = (startDateStr || '').match(/(?:(\d{4})年)?(\d{1,2})月(\d{1,2})日/);
+  if (!match) return null;
+  const month = parseInt(match[2]);
+  const startDay = parseInt(match[3]);
+
+  const endMatch = (endDateStr || '').match(/(?:(\d{4})年)?(\d{1,2})月(\d{1,2})日/);
+  const endDay = endMatch ? parseInt(endMatch[3]) : startDay + 1;
+
+  return [
+    { time: `${month}月${Math.max(1, startDay - 3)}日 已完成`, title: '收到入营通知邮件', sub: '漫旅自动从邮箱读取，已解析截止日期和报到要求', status: 'done', tag: '邮件已解析' },
+    { time: `${month}月${Math.max(1, startDay - 2)}日 已完成`, title: '资料确认 · 完成材料清单', sub: '成绩单、简历、相关证明材料 PDF 已上传备用', status: 'done', tag: '已准备完毕' },
+    { time: `${month}月${Math.max(1, startDay - 1)}日 进行中`, title: '备考专业知识 · AI陪练', sub: `复习${schoolName}核心理论、导师研究方向与往年面试真题`, status: 'active', tag: 'AI陪练中', tagType: 'gold' },
+    { time: `${month}月${startDay}日 待开展`, title: `${schoolName} 夏令营/面试开营`, sub: `${cityName} · 准时参加考核与报到`, status: 'todo' },
+    { time: `${month}月${endDay}日 待开展`, title: `综合面试与学术考核`, sub: `${schoolName} 考核答辩`, status: 'todo' }
+  ];
+}
 
 function TripDetailPage() {
   const { school } = useParams();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('timeline');
+  const [realInterview, setRealInterview] = useState(null);
 
-  const { city, date, type, timeline, studyCards, cityCards, majorCtx } = getTripDetailData(school || '');
+  useEffect(() => {
+    fetchInterviewData();
+  }, [school]);
+
+  const fetchInterviewData = async () => {
+    const token = localStorage.getItem('manlv_token');
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/interviews`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const list = await res.json();
+        const cleanSchool = (school || '').replace(/建筑与城市规划学院|计算机科学与技术学院|交叉信息研究院/g, '').trim();
+        const found = list.find(item => 
+          item.school && (item.school.includes(cleanSchool) || cleanSchool.includes(item.school))
+        );
+        if (found) {
+          setRealInterview(found);
+        }
+      }
+    } catch (e) {
+      console.error('Fetch interview error:', e);
+    }
+  };
+
+  const sampleDetail = getTripDetailData(school || '');
+  const { studyCards, cityCards, majorCtx } = sampleDetail;
+
+  // 优先对齐数据库中真实邮件解析的日期
+  let displayDate = sampleDetail.date;
+  let displayTimeline = sampleDetail.timeline;
+  let displayCity = realInterview?.city || sampleDetail.city;
+  let displayType = realInterview?.type || sampleDetail.type;
+
+  if (realInterview) {
+    const d = new Date(realInterview.date);
+    const m = d.getMonth() + 1;
+    const day = d.getDate();
+    displayDate = `${m}月${day}日 - ${m}月${day + 1}日`;
+
+    const aligned = generateAlignedTimeline(`${m}月${day}日`, `${m}月${day + 1}日`, school, displayCity);
+    if (aligned) {
+      displayTimeline = aligned;
+    }
+  }
 
   const openChat = (msg) => navigate('/chat', { state: { prefill: msg } });
 
@@ -31,13 +96,13 @@ function TripDetailPage() {
           <div className="detail-school">{school}</div>
           <div className="detail-city-row">
             <div className="detail-city-badge">
-              <LocationIcon size={12} /> {city}
+              <LocationIcon size={12} /> {displayCity}
             </div>
             <div className="detail-city-badge">
-              <CalendarIcon size={12} /> {date}
+              <CalendarIcon size={12} /> {displayDate}
             </div>
             <div className="detail-city-badge gold">
-              {type}
+              {displayType}
             </div>
           </div>
         </div>
@@ -62,7 +127,7 @@ function TripDetailPage() {
       <div className="detail-content scroll-area">
         {activeTab === 'timeline' && (
           <div className="timeline">
-            {timeline.map((item, index) => (
+            {displayTimeline.map((item, index) => (
               <div key={index} className="tl-item">
                 <div className={`tl-dot ${item.status}`}>{getTlIcon(item.status)}</div>
                 <div className="tl-content">
@@ -111,7 +176,7 @@ function TripDetailPage() {
         {activeTab === 'city' && (
           <>
             <div className="detail-intro-text">
-              {city}是你这次保研之旅的其中一站。以下是与{majorCtx}专业最相关的游学路线。
+              {displayCity}是你这次保研之旅的其中一站。以下是与{majorCtx}专业最相关的游学路线。
             </div>
             {cityCards.map((card, index) => (
               <div key={index} className="study-card">
@@ -123,7 +188,7 @@ function TripDetailPage() {
                   {card.points.map((point, i) => <div key={i} className="study-point">{point}</div>)}
                 </div>
                 {index === 0 && (
-                  <button className="ask-ai-btn" onClick={() => openChat(`帮我制定一个在${city}备考期间的1天${majorCtx}游学路线`)}>
+                  <button className="ask-ai-btn" onClick={() => openChat(`帮我制定一个在${displayCity}备考期间的1天${majorCtx}游学路线`)}>
                     <BotIcon size={14} /> 规划游学路线
                   </button>
                 )}

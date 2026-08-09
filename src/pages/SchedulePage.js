@@ -54,6 +54,10 @@ function SchedulePage() {
       if (res.ok) {
         const data = await res.json();
         setInterviews(data);
+        if (data && data.length > 0) {
+          const firstDay = new Date(data[0].date).getDate();
+          setSelectedDay(firstDay);
+        }
       }
     } catch (e) {
       console.error(e);
@@ -171,29 +175,18 @@ function SchedulePage() {
   };
 
   const dayNames = ['日', '一', '二', '三', '四', '五', '六'];
-  const days = [15, 16, 17, 18, 19, 20, 21, 22, 23, 24];
+  // 支持展现整月 (1日 ~ 31日) 行程
+  const days = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31];
 
-  // 将后端面试数据转换为日历展示格式 (T2 视觉增强版)
+  // 将后端面试数据转换为日历展示格式
   const getDynamicScheduleData = () => {
-    const data = {
-      18: [
-        { time: '07:18', title: '高铁 广州南→北京西', sub: 'G70 · 约9小时', Icon: PlaneIcon, type: 'transport', duration: '9h' },
-        { time: '17:00', title: '可用自由时间', sub: '可用于复习面试资料', type: 'free', duration: '1.5h' },
-        { time: '18:30', title: '入住酒店 · 学院路附近', sub: '海淀区 · 步行至清华15分钟', Icon: HotelIcon, type: 'hotel' },
-      ],
-      19: [
-        { time: '09:00', title: '清华大学 - 夏令营开营', sub: '建筑学院报告厅', Icon: CalendarIcon, type: 'event', duration: '3h' },
-        { time: '12:00', title: '午休 / 自由时间', sub: '校内食堂用餐', type: 'free', duration: '2h' },
-        { time: '14:00', title: '校园参观 & 导师见面', sub: '学院路校区', Icon: LocationIcon, type: 'event', duration: '4h' },
-      ]
-    };
+    const data = {};
 
     interviews.forEach(iv => {
       const date = new Date(iv.date);
       const day = date.getDate();
       if (!data[day]) data[day] = [];
       
-      // 避免重复添加后端数据
       const exists = data[day].some(item => item.isBackend && item.id === iv.id);
       if (!exists) {
         data[day].push({

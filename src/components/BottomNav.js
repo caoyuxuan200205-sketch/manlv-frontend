@@ -6,7 +6,7 @@ const tabs = [
   { path: '/home', label: '首页', Icon: HomeIcon },
   { path: '/trip', label: '行程', Icon: TripIcon },
   { path: '/learn', label: '漫学', Icon: LearnIcon },
-  { path: '/inbox', label: '通知', Icon: InboxIcon },
+  { path: '/inbox', label: '邮件', Icon: InboxIcon },
   { path: '/profile', label: '我的', Icon: ProfileIcon },
 ];
 
